@@ -278,6 +278,9 @@ footer.foot .wrap { padding-block: 24px; display: flex; flex-wrap: wrap; gap: 8p
 .rteam-status.st-ok { background: var(--ok-soft); color: var(--ok); }
 .rteam-status.st-bad { background: var(--bad-soft); color: var(--bad); }
 .rteam-status.st-pend { background: var(--pend-soft); color: var(--pend); }
+.div-full { display: flex; flex-wrap: wrap; gap: 4px 12px; align-items: baseline; margin: 0 0 18px; padding: 12px 16px; border-radius: var(--radius); border-left: 4px solid var(--ok); background: var(--ok-soft); color: var(--ok); }
+.div-full b { font: 600 13px/1.2 var(--font-display); letter-spacing: .12em; text-transform: uppercase; }
+.div-full span { color: var(--text); font-size: 15px; }
 .rteam-status span { color: var(--fg); }
 .tdlg.st-ok { border: 2px solid var(--ok); }
 .tdlg.st-bad { border: 2px solid var(--bad); }
@@ -1335,7 +1338,8 @@ button.rteam-head:hover .rteam-more { color: #fff; text-decoration-color: var(--
       if (key !== rosterKey) return;
       const n = k => teams.filter(t => t.st === k).length, parts = [["ok", "accepted"], ["pend", "under review"], ["bad", "ineligible"]].filter(([k]) => n(k)).map(([k, w]) => `${n(k)} ${w}`);
       meta.innerHTML = `${teams.length} team${teams.length === 1 ? "" : "s"}${parts.length ? ` (${parts.join(", ")})` : ""} · <a href="${sheetUrl}" target="_blank" rel="noopener">View the Google Sheet</a>`;
-      box.innerHTML = teams.length ? `<div class="roster-grid">${teams.map((t, i) => teamCard(t, i)).join("")}</div>` : `<div class="empty">No teams in the ${esc(L.name)} sheet yet.</div>`;
+      const full = n("ok") >= 8 ? `<div class="div-full" role="status"><b>Division full</b><span>All 8 team slots in ${esc(L.name)} are filled (rule 2.1.2).</span></div>` : "";
+      box.innerHTML = teams.length ? `${full}<div class="roster-grid">${teams.map((t, i) => teamCard(t, i)).join("")}</div>` : `<div class="empty">No teams in the ${esc(L.name)} sheet yet.</div>`;
       box.querySelectorAll("img.rteam-logo").forEach(img => img.addEventListener("error", () => {
         const d = document.createElement("div"); d.className = "rteam-mono"; d.setAttribute("aria-hidden", "true"); d.textContent = img.dataset.initials; img.replaceWith(d);
       }, { once: true }));
