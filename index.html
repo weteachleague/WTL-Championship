@@ -249,7 +249,18 @@ footer.foot .wrap { padding-block: 24px; display: flex; flex-wrap: wrap; gap: 8p
 /* ---------- Roster ---------- */
 .seg-row { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
 #rosterMeta { margin-bottom: 18px; }
-.roster-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; }
+#roster > .wrap { max-width: 1480px; }
+.roster-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; }
+@media (min-width: 620px) { .roster-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (min-width: 940px) { .roster-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (min-width: 1200px) {
+  .roster-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
+  .roster-grid .rteam-head { gap: 12px; padding: 14px; }
+  .roster-grid .rteam-logo, .roster-grid .rteam-mono { width: 52px; height: 52px; }
+  .roster-grid .rteam-mono { font-size: 20px; }
+  .roster-grid .rteam-head h3 { font-size: 19px; }
+  .roster-grid .rteam-list li { grid-template-columns: 62px minmax(0, 1fr) auto; gap: 8px; padding: 7px 14px; }
+}
 .rteam-card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; display: grid; align-content: start; min-width: 0; }
 .rteam-head { display: flex; gap: 14px; align-items: center; padding: 16px 18px; background: var(--sunk); border-bottom: 1px solid var(--line); }
 .rteam-logo, .rteam-mono { width: 64px; height: 64px; flex: none; border-radius: var(--radius); }
