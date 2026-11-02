@@ -306,9 +306,11 @@ button.rteam-head h3 { overflow-wrap: break-word; }
 button.rteam-head:hover .rteam-more { color: #fff; text-decoration-color: var(--magenta); }
 .tdlg { width: min(760px, calc(100vw - 32px)); max-height: calc(100dvh - 48px); padding: 0; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); color: var(--fg); overflow: auto; }
 .tdlg::backdrop { background: rgba(1, 15, 25, .78); }
-.tdlg-head { display: flex; gap: 14px; align-items: center; padding: 18px 20px; background: var(--sunk); border-bottom: 1px solid var(--line); position: sticky; top: 0; z-index: 1; }
-.tdlg-head h3 { font-size: 26px; line-height: 1.1; margin: 4px 0 0; overflow-wrap: anywhere; }
-.tdlg-x { margin-left: auto; align-self: flex-start; background: none; border: 0; color: var(--muted); font-size: 28px; line-height: 1; cursor: pointer; padding: 2px 6px; border-radius: 3px; }
+.tdlg-head { display: flex; gap: 24px; align-items: center; padding: 26px 24px; background: var(--sunk); border-bottom: 1px solid var(--line); }
+.tdlg-head .rteam-logo, .tdlg-head .rteam-mono { width: 128px; height: 128px; }
+.tdlg-head .rteam-mono { font-size: 44px; }
+.tdlg-head h3 { font-size: 44px; line-height: 1.05; margin: 6px 0 0; overflow-wrap: anywhere; }
+.tdlg-x { position: sticky; top: 0; margin-left: auto; align-self: flex-start; background: none; border: 0; color: var(--muted); font-size: 28px; line-height: 1; cursor: pointer; padding: 2px 6px; border-radius: 3px; }
 .tdlg-x:hover { color: #fff; }
 .tdlg-x:focus-visible { outline: 2px solid var(--magenta); }
 .tdlg-body { display: grid; gap: 18px; padding: 20px; }
@@ -326,7 +328,10 @@ button.rteam-head:hover .rteam-more { color: #fff; text-decoration-color: var(--
 .tdlg-table a:hover { text-decoration-color: var(--magenta); }
 .tdlg-table .pt-unit { display: none; }
 @media (max-width: 560px) {
-  .tdlg-head h3 { font-size: 21px; }
+  .tdlg-head { gap: 16px; padding: 18px 16px; }
+  .tdlg-head .rteam-logo, .tdlg-head .rteam-mono { width: 84px; height: 84px; }
+  .tdlg-head .rteam-mono { font-size: 30px; }
+  .tdlg-head h3 { font-size: 30px; }
   .tdlg-body { padding: 16px; }
   .tdlg-table, .tdlg-table tbody { display: block; }
   .tdlg-table thead { display: none; }
