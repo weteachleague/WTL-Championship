@@ -345,6 +345,11 @@ button.rteam-head:hover .rteam-more { color: #fff; text-decoration-color: var(--
 .tdlg-table a, .tdlg-body .hint a { color: inherit; text-decoration: underline; text-decoration-color: var(--line); text-underline-offset: 3px; }
 .tdlg-table a:hover { text-decoration-color: var(--magenta); }
 .tdlg-table .pt-unit { display: none; }
+.ms-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.ms-link { display: inline-flex; align-items: center; gap: 8px; padding: 10px 14px; border: 1px solid var(--blue); border-radius: var(--radius); background: var(--blue); color: #fff; font: 600 14px/1 var(--font-display); letter-spacing: .06em; text-transform: uppercase; text-decoration: none; }
+.ms-link:hover { background: transparent; color: #fff; }
+.ms-link:focus-visible { outline: 2px solid var(--magenta); outline-offset: 2px; }
+.ms-link .ms-n { color: rgba(255,255,255,.75); font-weight: 500; }
 @media (max-width: 560px) {
   .tdlg-head { gap: 16px; padding: 18px 16px; }
   .tdlg-head .rteam-logo, .tdlg-head .rteam-mono { width: 84px; height: 84px; }
@@ -1435,6 +1440,22 @@ button.rteam-head:hover .rteam-more { color: #fff; text-decoration-color: var(--
   }
   // ---------- Team details dialog (zooms out of the clicked card) ----------
   const SUB_LABEL = { top: "Top", jungle: "Jungle", mid: "Mid", adc: "ADC", support: "Support" };
+  // OP.GG multi-search for the starters, grouped by server (taken from each player's OP.GG link, else the division's region)
+  function multiSearchLinks(starters, leagueKey) {
+    const fallback = leagueKey.startsWith("eu") ? "euw" : "na";
+    const groups = new Map();
+    starters.forEach(p => {
+      if (!p.raw || !p.raw.includes("#")) return;
+      const m = (p.url || "").match(/op\.gg\/(?:[a-z]{2}\/)?(?:lol\/)?(?:summoners|multisearch)\/([a-z]+)/i);
+      const reg = (m ? m[1] : fallback).toLowerCase();
+      if (!groups.has(reg)) groups.set(reg, []);
+      groups.get(reg).push(p.raw.trim());
+    });
+    if (!groups.size) return "";
+    const many = groups.size > 1;
+    return `<div class="ms-row">${[...groups].map(([reg, names]) =>
+      `<a class="ms-link" href="https://op.gg/lol/multisearch/${reg}?summoners=${encodeURIComponent(names.join(","))}" target="_blank" rel="noopener">OP.GG multi-search${many ? ` · ${reg.toUpperCase()}` : ""}<span class="ms-n">${names.length === 5 ? "5 starters" : `${names.length} starter${names.length === 1 ? "" : "s"}`}</span></a>`).join("")}</div>`;
+  }
   function teamDetailsHtml(t, L) {
     const num = p => Number.isFinite(+p.pts) && p.pts !== "" ? +p.pts : null;
     const starters = t.starters, subs = t.subs, all = [...starters, ...subs];
@@ -1482,6 +1503,7 @@ button.rteam-head:hover .rteam-more { color: #fff; text-decoration-color: var(--
           </div>
           <span class="pill ${inRange && starters.length === 5 ? "ok" : "warn"}">${starters.length < 5 ? `${starters.length}/5 starters` : inRange ? "Within limit" : tpe > hi ? `${tpe - hi} over limit` : `${lo - tpe} under limit`}</span>
         </div>
+        ${multiSearchLinks(starters, L.key || rosterKey)}
         <div class="tablebox"><table class="data tdlg-table">
           <thead><tr><th>Role</th><th>Player</th><th class="slot">Slot</th><th class="n">SLOPE</th><th class="n">Pts</th></tr></thead>
           <tbody>${starters.map(p => row(p, "Starter")).join("")}${subs.map(p => row(p, p.subFor ? `${SUB_LABEL[p.subFor]} sub` : "Sub")).join("")}</tbody>
