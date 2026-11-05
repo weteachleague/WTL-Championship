@@ -246,6 +246,26 @@ hr.split { border: 0; border-top: 1px solid var(--line); margin: 4px 0; width: 1
 footer.foot { border-top: 1px solid var(--line); }
 footer.foot .wrap { padding-block: 24px; display: flex; flex-wrap: wrap; gap: 8px 24px; justify-content: space-between; font-size: 14px; color: var(--muted); }
 
+/* ---------- Schedule ---------- */
+#schedule > .wrap { max-width: 1480px; }
+.sched-meta { margin-bottom: 18px; }
+.sched { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; align-items: start; }
+@media (min-width: 900px) { .sched { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+.wk { border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); overflow: hidden; }
+.wk > header { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; padding: 14px 16px; border-bottom: 1px solid var(--line); background: var(--sunk); }
+.wk > header h3 { margin: 0; font: 700 22px/1.1 var(--font-display); text-transform: uppercase; letter-spacing: .04em; }
+.wk > header span { font-size: 13.5px; color: var(--muted); }
+.wk-body { padding: 14px 16px 16px; display: grid; gap: 16px; }
+.bkt { display: grid; gap: 8px; }
+.bkt h4 { margin: 0; display: flex; align-items: center; gap: 10px; font: 600 14px/1 var(--font-display); letter-spacing: .08em; text-transform: uppercase; color: var(--magenta); }
+.bkt h4::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+.mt { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 8px; }
+.slot { display: flex; align-items: center; gap: 8px; min-height: 44px; padding: 8px 10px; border: 1px dashed var(--line); border-radius: 4px; background: var(--bg); color: var(--muted); font-size: 14.5px; min-width: 0; }
+.slot.filled { border-style: solid; color: #fff; font-weight: 600; }
+.slot .n { font: 600 12px/1 var(--font-display); color: var(--soft); letter-spacing: .04em; flex: none; }
+.slot .t { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mt .vs { font: 600 13px/1 var(--font-display); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+
 /* ---------- Roster ---------- */
 .seg-row { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
 #rosterMeta { margin-bottom: 18px; }
@@ -370,6 +390,7 @@ button.rteam-head:hover .rteam-more { color: #fff; text-decoration-color: var(--
     <button type="button" role="tab" id="tab-slope" aria-controls="slope" aria-selected="false" tabindex="-1" data-tab="slope"><span class="k">B</span>SLOPE</button>
     <button type="button" role="tab" id="tab-calculator" aria-controls="calculator" aria-selected="false" tabindex="-1" data-tab="calculator"><span class="k">C</span>Calculator</button>
     <button type="button" role="tab" id="tab-roster" aria-controls="roster" aria-selected="false" tabindex="-1" data-tab="roster"><span class="k">D</span>Roster</button>
+    <button type="button" role="tab" id="tab-schedule" aria-controls="schedule" aria-selected="false" tabindex="-1" data-tab="schedule"><span class="k">E</span>Schedule</button>
   </div>
 </nav>
 
@@ -783,6 +804,18 @@ button.rteam-head:hover .rteam-more { color: #fff; text-decoration-color: var(--
     <p class="hint" id="rosterMeta" aria-live="polite"></p>
     <div id="rosterBox"></div>
     <dialog id="teamDlg" class="tdlg" aria-labelledby="tdlgTitle"></dialog>
+  </div>
+</section>
+<section class="band" id="schedule" role="tabpanel" aria-labelledby="tab-schedule" tabindex="-1" hidden>
+  <div class="wrap">
+    <div class="band-head">
+      <div class="eyebrow">Section E</div>
+      <h2>Schedule</h2>
+      <p>Swiss stage matchups for each division (rule <a href="#r6-1">6.1</a>). Week 1 is drawn; from week 2, teams are paired with teams on the same record. The four teams with at least 2 wins go to the semi-finals.</p>
+    </div>
+    <div class="seg-row" id="schedTabs" aria-label="Division"></div>
+    <p class="hint sched-meta" id="schedMeta"></p>
+    <div class="sched" id="schedBox"></div>
   </div>
 </section>
 </main>
@@ -1499,8 +1532,43 @@ button.rteam-head:hover .rteam-more { color: #fff; text-decoration-color: var(--
     rosterKey = b.dataset.k; store.set("wtl-roster", rosterKey); loadRoster();
   });
 
+  // ---------- Schedule (Swiss stage, rule 6.1) ----------
+  // Fill a slot by putting the team name in SCHEDULE[division][week][bracket][slot]; empty = TBD.
+  const SWISS = [
+    { week: "Week 1", note: "Initial draw", brackets: [{ label: "All teams", slots: 8 }] },
+    { week: "Week 2", note: "Paired by record", brackets: [{ label: "1W – 0L", slots: 4 }, { label: "0W – 1L", slots: 4 }] },
+    { week: "Week 3", note: "Paired by record", brackets: [{ label: "2W – 0L", slots: 2 }, { label: "1W – 1L", slots: 4 }, { label: "0W – 2L", slots: 2 }] },
+  ];
+  const SCHEDULE = {}; // e.g. SCHEDULE.na1 = [[["Wire Dolves", "shadowz", ...]], [[...], [...]], [[...], [...], [...]]]
+  let schedKey = store.get("wtl-sched");
+  if (!LEAGUES[schedKey]) schedKey = "na1";
+  function renderSchedule() {
+    $("schedTabs").innerHTML = Object.entries(LEAGUES).map(([k, L]) =>
+      `<button type="button" class="seg" aria-pressed="${k === schedKey}" data-k="${k}">${esc(L.name)}</button>`).join("");
+    const eu = schedKey.startsWith("eu");
+    $("schedMeta").textContent = `${LEAGUES[schedKey].name} · default match time Friday ${eu ? "7 pm CET" : "8 pm EST"}, any day of the week if both captains agree (rule 5.5).`;
+    const data = SCHEDULE[schedKey] || [];
+    $("schedBox").innerHTML = SWISS.map((w, wi) => {
+      const body = w.brackets.map((b, bi) => {
+        const names = ((data[wi] || [])[bi]) || [];
+        let rows = "";
+        for (let i = 0; i < b.slots; i += 2) {
+          const slot = j => { const t = names[j]; return `<div class="slot${t ? " filled" : ""}"><span class="n">${j + 1}</span><span class="t">${t ? esc(t) : "TBD"}</span></div>`; };
+          rows += `<div class="mt">${slot(i)}<span class="vs">vs</span>${slot(i + 1)}</div>`;
+        }
+        return `<div class="bkt"><h4>${esc(b.label)}</h4>${rows}</div>`;
+      }).join("");
+      return `<section class="wk" aria-label="${esc(w.week)}"><header><h3>${esc(w.week)}</h3><span>${esc(w.note)}</span></header><div class="wk-body">${body}</div></section>`;
+    }).join("");
+  }
+  $("schedTabs").addEventListener("click", e => {
+    const b = e.target.closest("[data-k]"); if (!b) return;
+    schedKey = b.dataset.k; store.set("wtl-sched", schedKey); renderSchedule();
+  });
+  renderSchedule();
+
   // ---------- Tabs ----------
-  const TABS = ["rules", "slope", "calculator", "roster"];
+  const TABS = ["rules", "slope", "calculator", "roster", "schedule"];
   const tabBtns = [...document.querySelectorAll('.tabbar [role="tab"]')];
   function showTab(id, focus) {
     TABS.forEach(t => { $(t).hidden = t !== id; });
