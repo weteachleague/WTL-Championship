@@ -250,21 +250,27 @@ footer.foot .wrap { padding-block: 24px; display: flex; flex-wrap: wrap; gap: 8p
 #schedule > .wrap { max-width: 1480px; }
 .sched-meta { margin-bottom: 18px; }
 .sched { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; align-items: start; }
-@media (min-width: 900px) { .sched { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (min-width: 700px) { .sched { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (min-width: 1200px) { .sched { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
 .wk { border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); overflow: hidden; }
 .wk > header { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; padding: 14px 16px; border-bottom: 1px solid var(--line); background: var(--sunk); }
 .wk > header h3 { margin: 0; font: 700 22px/1.1 var(--font-display); text-transform: uppercase; letter-spacing: .04em; }
-.wk > header span { font-size: 13.5px; color: var(--muted); }
-.wk-body { padding: 14px 16px 16px; display: grid; gap: 16px; }
-.bkt { display: grid; gap: 8px; }
+.wk > header span { font-size: 13.5px; color: var(--muted); text-align: right; }
+.wk-body { padding: 14px 16px 16px; display: grid; gap: 18px; }
+.bkt { display: grid; gap: 10px; }
 .bkt h4 { margin: 0; display: flex; align-items: center; gap: 10px; font: 600 14px/1 var(--font-display); letter-spacing: .08em; text-transform: uppercase; color: var(--magenta); }
 .bkt h4::after { content: ""; flex: 1; height: 1px; background: var(--line); }
-.mt { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 8px; }
-.slot { display: flex; align-items: center; gap: 8px; min-height: 44px; padding: 8px 10px; border: 1px dashed var(--line); border-radius: 4px; background: var(--bg); color: var(--muted); font-size: 14.5px; min-width: 0; }
-.slot.filled { border-style: solid; color: #fff; font-weight: 600; }
-.slot .n { font: 600 12px/1 var(--font-display); color: var(--soft); letter-spacing: .04em; flex: none; }
-.slot .t { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.mt .vs { font: 600 13px/1 var(--font-display); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.bkt .bnote { margin: -2px 0 0; font-size: 13px; color: var(--muted); }
+.mt { border: 1px solid var(--line); border-radius: var(--radius); background: var(--bg); overflow: hidden; }
+.mt .vs { display: flex; align-items: center; gap: 10px; padding: 0 12px; font: 600 12px/1 var(--font-display); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+.mt .vs::before, .mt .vs::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+.slot { display: flex; align-items: center; gap: 12px; padding: 10px 12px; min-width: 0; }
+.slot .rteam-logo, .slot .rteam-mono, .slot .tbd-mark { width: 44px; height: 44px; flex: none; border-radius: 4px; }
+.slot .rteam-logo { object-fit: contain; background: var(--sunk); }
+.slot .rteam-mono { font-size: 17px; }
+.slot .tbd-mark { display: grid; place-items: center; border: 1px dashed var(--line); color: var(--muted); font: 600 16px/1 var(--font-display); }
+.slot .t { font: 600 17px/1.25 var(--font-display); letter-spacing: .02em; color: #fff; overflow-wrap: anywhere; }
+.slot.tbd .t { color: var(--muted); font-weight: 500; }
 
 /* ---------- Roster ---------- */
 .seg-row { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
@@ -811,7 +817,7 @@ button.rteam-head:hover .rteam-more { color: #fff; text-decoration-color: var(--
     <div class="band-head">
       <div class="eyebrow">Section E</div>
       <h2>Schedule</h2>
-      <p>Swiss stage matchups for each division (rule <a href="#r6-1">6.1</a>). Week 1 is drawn; from week 2, teams are paired with teams on the same record. The four teams with at least 2 wins go to the semi-finals.</p>
+      <p>Matchups for each division. Week 1 is drawn; from week 2, teams play teams on the same record (rule <a href="#r6-1">6.1</a>). The four teams with at least 2 wins go to the <a href="#r6-2">semi-finals</a>, and the two winners meet in the <a href="#r6-3">finals</a>.</p>
     </div>
     <div class="seg-row" id="schedTabs" aria-label="Division"></div>
     <p class="hint sched-meta" id="schedMeta"></p>
@@ -1532,34 +1538,45 @@ button.rteam-head:hover .rteam-more { color: #fff; text-decoration-color: var(--
     rosterKey = b.dataset.k; store.set("wtl-roster", rosterKey); loadRoster();
   });
 
-  // ---------- Schedule (Swiss stage, rule 6.1) ----------
-  // Fill a slot by putting the team name in SCHEDULE[division][week][bracket][slot]; empty = TBD.
-  const SWISS = [
-    { week: "Week 1", note: "Initial draw", brackets: [{ label: "All teams", slots: 8 }] },
-    { week: "Week 2", note: "Paired by record", brackets: [{ label: "1W – 0L", slots: 4 }, { label: "0W – 1L", slots: 4 }] },
-    { week: "Week 3", note: "Paired by record", brackets: [{ label: "2W – 0L", slots: 2 }, { label: "1W – 1L", slots: 4 }, { label: "0W – 2L", slots: 2 }] },
+  // ---------- Schedule (Swiss stage 6.1, semi-finals 6.2, finals 6.3) ----------
+  // To fill in matchups, put team names (exactly as on the roster sheet, so the logo matches) in SCHEDULE.
+  // Each stage is a list of brackets in the order below; each bracket is a flat list of names, two per match.
+  // e.g. SCHEDULE.na1 = { w1: [["Wire Dolves", "shadowz", "Pengu ...", "...", ...]], w2: [[...1W-0L], [...0W-1L]], w3: [[2W-0L], [1W-1L], [0W-2L]], po: [[semis], [finals]] }
+  const STAGES = [
+    { id: "w1", title: "Week 1", note: "Initial draw", brackets: [{ label: "All teams", slots: 8 }] },
+    { id: "w2", title: "Week 2", note: "Paired by record", brackets: [{ label: "1W – 0L", slots: 4 }, { label: "0W – 1L", slots: 4 }] },
+    { id: "w3", title: "Week 3", note: "Paired by record", brackets: [{ label: "2W – 0L", slots: 2 }, { label: "1W – 1L", slots: 4 }, { label: "0W – 2L", slots: 2 }] },
+    { id: "po", title: "Playoffs", note: "Top 4 after Swiss", brackets: [
+      { label: "Semi-finals", slots: 4, note: "The 3–0 team picks its opponent and side (6.2). Best of 3." },
+      { label: "Finals", slots: 2, note: "Best of 5, or best of 3 if both teams agree (6.3)." } ] },
   ];
-  const SCHEDULE = {}; // e.g. SCHEDULE.na1 = [[["Wire Dolves", "shadowz", ...]], [[...], [...]], [[...], [...], [...]]]
+  const SCHEDULE = {};
   let schedKey = store.get("wtl-sched");
   if (!LEAGUES[schedKey]) schedKey = "na1";
+  function schedSlot(name) {
+    if (!name) return `<div class="slot tbd"><span class="tbd-mark" aria-hidden="true">?</span><span class="t">TBD</span></div>`;
+    const initials = name.split(/\s+/).filter(Boolean).slice(0, 2).map(w => w[0]).join("").toUpperCase();
+    return `<div class="slot"><img class="rteam-logo" src="assets/logos/${slugify(name)}.png" alt="" data-initials="${esc(initials)}"><span class="t">${esc(name)}</span></div>`;
+  }
   function renderSchedule() {
     $("schedTabs").innerHTML = Object.entries(LEAGUES).map(([k, L]) =>
       `<button type="button" class="seg" aria-pressed="${k === schedKey}" data-k="${k}">${esc(L.name)}</button>`).join("");
     const eu = schedKey.startsWith("eu");
-    $("schedMeta").textContent = `${LEAGUES[schedKey].name} · default match time Friday ${eu ? "7 pm CET" : "8 pm EST"}, any day of the week if both captains agree (rule 5.5).`;
-    const data = SCHEDULE[schedKey] || [];
-    $("schedBox").innerHTML = SWISS.map((w, wi) => {
-      const body = w.brackets.map((b, bi) => {
-        const names = ((data[wi] || [])[bi]) || [];
+    $("schedMeta").textContent = `${LEAGUES[schedKey].name} · default match time Friday ${eu ? "7 pm CET" : "8 pm EST"}, or any day that week if both captains agree (rule 5.5).`;
+    const data = SCHEDULE[schedKey] || {};
+    const box = $("schedBox");
+    box.innerHTML = STAGES.map(st => {
+      const body = st.brackets.map((b, bi) => {
+        const names = ((data[st.id] || [])[bi]) || [];
         let rows = "";
-        for (let i = 0; i < b.slots; i += 2) {
-          const slot = j => { const t = names[j]; return `<div class="slot${t ? " filled" : ""}"><span class="n">${j + 1}</span><span class="t">${t ? esc(t) : "TBD"}</span></div>`; };
-          rows += `<div class="mt">${slot(i)}<span class="vs">vs</span>${slot(i + 1)}</div>`;
-        }
-        return `<div class="bkt"><h4>${esc(b.label)}</h4>${rows}</div>`;
+        for (let i = 0; i < b.slots; i += 2) rows += `<div class="mt">${schedSlot(names[i])}<div class="vs">vs</div>${schedSlot(names[i + 1])}</div>`;
+        return `<div class="bkt"><h4>${esc(b.label)}</h4>${b.note ? `<p class="bnote">${esc(b.note)}</p>` : ""}${rows}</div>`;
       }).join("");
-      return `<section class="wk" aria-label="${esc(w.week)}"><header><h3>${esc(w.week)}</h3><span>${esc(w.note)}</span></header><div class="wk-body">${body}</div></section>`;
+      return `<section class="wk" aria-label="${esc(st.title)}"><header><h3>${esc(st.title)}</h3><span>${esc(st.note)}</span></header><div class="wk-body">${body}</div></section>`;
     }).join("");
+    box.querySelectorAll("img.rteam-logo").forEach(img => img.addEventListener("error", () => {
+      const d = document.createElement("div"); d.className = "rteam-mono"; d.setAttribute("aria-hidden", "true"); d.textContent = img.dataset.initials; img.replaceWith(d);
+    }, { once: true }));
   }
   $("schedTabs").addEventListener("click", e => {
     const b = e.target.closest("[data-k]"); if (!b) return;
