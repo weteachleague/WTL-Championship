@@ -1,5 +1,7 @@
 0.0 Introduction
 The following rules are for the WTL Championship 2026 associated with We Teach League. By participating in the league, players are acknowledging that they have read and understand the rules in their entirety.
+
+I’d like to say a big thank you to the people over at LBLCS. The rule book below has been highly influenced by their work. We think they are doing a great job, which is why their rule book was a great starting point for WTL events.
 0.1 Out of Game Behavior
 [0.1.1]​ Any harassment or personal attacks or any kind will result in penalties for the player(s) in question depending on the severity of the acts. This includes but is not limited to: bullying, racism, personal insults, and offensive language.
 [0.1.2]​ Disrespectfulness of any kind will not be tolerated.
