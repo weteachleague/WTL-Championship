@@ -216,7 +216,7 @@ SLOPE Evaluation
 3.0 Roster Changes
 3.1 Mid-Match substitutions and Roster Announcements
 [3.1.1] Substitute players already on a team’s roster are allowed to play in any given game. But may be given a ban penalty (see [3.1.2.3]).
-[3.1.2] Captains should confirm what their roster will be at least 24 hours in advance and post it in the roster announcement channel.
+[3.1.2] Captains should confirm what their roster will be at least 24 hours in advance and post it in the roster announcement channel if their roster isn’t made of their 5 starters. (if you play with your 5 starters, no announcement is necessary)
 [3.1.2.1] If a team plans on making substitutions during a match, the sub needs to be on the announced roster and it must be announced in which games they will be playing in the announcement mentioned in [3.1.2]. (see [3.1.2.3])
 [3.1.2.2] The announced roster must be between 5 and 7 players.
 [3.1.2.3] If any last minute change must be made, the team may change it, but must give 10 additional minutes to the enemy team to prepare and will lose two bans during the first ban phase for all games in which the roster isn’t what was announced 24 hours before the game.
@@ -282,5 +282,3 @@ SLOPE Evaluation
 
 
 May the best team reap the glory and the rewards, enjoy the event!
-PDF: SLOPE.pdf
-Code: Untitled0.ipynb
