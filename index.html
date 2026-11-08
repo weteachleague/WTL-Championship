@@ -1727,7 +1727,13 @@ button.rteam-head:hover .rteam-more { color: #fff; text-decoration-color: var(--
     ],
   };
   const stagesFor = key => [...(LAYOUTS[DIV_TEAMS[key]] || LAYOUTS[8]), PLAYOFFS];
-  const SCHEDULE = {};
+  // Week 1 random draw, published 2026-11-08.
+  const SCHEDULE = {
+    na1: { w1: [["Air Force Gaming", "Int for Head Pats", "Pengu and the Intermediate Bots", "End of Review", "Wire Dolves", "Cowboy Kitties", "shadowz", "WTL Interviewees"]] },
+    na2: { w1: [["Tuff Puffs", "Tinky Winky Fanclub", "WTL Students of the Game", "Loser's Queue", "NoTPs", "Hanhwa Life Support", "Project Jasper", "Couch Enthusiasts"]] },
+    na3: { w1: [["Tuff Puffs Rising", "SOO Esports", "Let It Ride", "Molotov1", "The Beginning of Immortality", "The Flying Embers"], ["Whiskey Warriors"]] },
+    eu1: { w1: [["PeyzPal", "Grey Screen Wincon", "Winners Queue v2", "Rooks", "Frozen Syndicate", "Gankruptcy"]] },
+  };
   let schedKey = store.get("wtl-sched");
   if (!PLAYING[schedKey]) schedKey = "na1";
   // Game results come live from the "WTL Championship - Results" sheet, written by the Discord bot (/result).
