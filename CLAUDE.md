@@ -1,6 +1,6 @@
 # WTL Championship Rulebook site
 
-Static GitHub Pages site (https://weteachleague.github.io/WTL-Championship/) for the We Teach League WTL Championship 2026: rulebook, SLOPE explainer, live SLOPE calculator and team rosters, in four tabs.
+Static GitHub Pages site (https://weteachleague.github.io/WTL-Championship/) for the We Teach League WTL Championship 2026: rulebook, SLOPE explainer, live SLOPE calculator, team rosters, standings, schedule and player stats, in seven tabs. Standings, Schedule and Stats read the "WTL Championship - Results" sheet (Results and Stats tabs) live; DIV_TEAMS in `src/page.html` sets each division's Swiss layout (8, 7 with byes, 6 with a cross match).
 
 - Edit `src/page.html` only, then run `./build.sh` to regenerate `index.html` (what Pages serves). Push to `main` to publish.
 - Theme follows weteachleague.com's Elementor kit: navy `#010F19`, blue `#2323F2`, magenta `#FF60FF`, greys `#D5D5D5` / `#A1A1A1` / `#2E2E2E`, Oswald (uppercase headings) + Public Sans. Dark only.

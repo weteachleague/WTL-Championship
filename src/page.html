@@ -291,6 +291,26 @@ footer.foot .wrap { padding-block: 24px; display: flex; flex-wrap: wrap; gap: 8p
 .res-log a { color: inherit; text-decoration: underline; text-decoration-color: var(--line); text-underline-offset: 3px; }
 .res-log a:hover { text-decoration-color: var(--magenta); }
 
+/* ---------- Standings ---------- */
+#standings > .wrap { max-width: 1480px; }
+.sd td, .sd th { white-space: nowrap; }
+.sd td.tm { white-space: normal; min-width: 200px; }
+.sd .tmw { display: flex; align-items: center; gap: 12px; }
+.sd .rteam-logo, .sd .rteam-mono { width: 36px; height: 36px; flex: none; border-radius: 4px; }
+.sd .rteam-logo { object-fit: contain; background: var(--sunk); }
+.sd .rteam-mono { font-size: 14px; }
+.sd .tmn { font: 600 17px/1.25 var(--font-display); letter-spacing: .02em; color: #fff; overflow-wrap: anywhere; }
+.sd td.seed { width: 1%; font: 700 20px/1 var(--font-display); color: var(--muted); font-variant-numeric: tabular-nums; }
+.sd tr.q td.seed { color: var(--magenta); }
+.sd tr.cut td { border-bottom: 2px solid var(--magenta); }
+.sd .rec { font: 700 18px/1 var(--font-display); color: #fff; }
+.sd .pos { color: var(--ok); }
+.sd .neg { color: var(--bad); }
+.sd .tie { display: inline-block; margin-left: 6px; padding: 2px 5px; border-radius: 3px; background: var(--pend-soft); color: var(--pend); font: 600 10px/1 var(--font-display); letter-spacing: .08em; text-transform: uppercase; vertical-align: 2px; }
+.sd th.grp { text-align: center; border-bottom: 0; padding-bottom: 0; color: var(--magenta); }
+.sd-key { margin-top: 12px; font-size: 13.5px; color: var(--muted); }
+@media (max-width: 760px) { .sd .hide-sm { display: none; } .sd td.tm { min-width: 0; } table.data.sd th, table.data.sd td { padding: 8px 6px; } }
+
 /* ---------- Stats ---------- */
 #stats > .wrap { max-width: 1480px; }
 .st-meta { margin-bottom: 18px; }
@@ -463,8 +483,9 @@ button.rteam-head:hover .rteam-more { color: #fff; text-decoration-color: var(--
     <button type="button" role="tab" id="tab-slope" aria-controls="slope" aria-selected="false" tabindex="-1" data-tab="slope"><span class="k">B</span>SLOPE</button>
     <button type="button" role="tab" id="tab-calculator" aria-controls="calculator" aria-selected="false" tabindex="-1" data-tab="calculator"><span class="k">C</span>Calculator</button>
     <button type="button" role="tab" id="tab-roster" aria-controls="roster" aria-selected="false" tabindex="-1" data-tab="roster"><span class="k">D</span>Roster</button>
-    <button type="button" role="tab" id="tab-schedule" aria-controls="schedule" aria-selected="false" tabindex="-1" data-tab="schedule"><span class="k">E</span>Schedule</button>
-    <button type="button" role="tab" id="tab-stats" aria-controls="stats" aria-selected="false" tabindex="-1" data-tab="stats"><span class="k">F</span>Stats</button>
+    <button type="button" role="tab" id="tab-standings" aria-controls="standings" aria-selected="false" tabindex="-1" data-tab="standings"><span class="k">E</span>Standings</button>
+    <button type="button" role="tab" id="tab-schedule" aria-controls="schedule" aria-selected="false" tabindex="-1" data-tab="schedule"><span class="k">F</span>Schedule</button>
+    <button type="button" role="tab" id="tab-stats" aria-controls="stats" aria-selected="false" tabindex="-1" data-tab="stats"><span class="k">G</span>Stats</button>
   </div>
 </nav>
 
@@ -896,10 +917,22 @@ button.rteam-head:hover .rteam-more { color: #fff; text-decoration-color: var(--
     <dialog id="teamDlg" class="tdlg" aria-labelledby="tdlgTitle"></dialog>
   </div>
 </section>
-<section class="band" id="schedule" role="tabpanel" aria-labelledby="tab-schedule" tabindex="-1" hidden>
+<section class="band" id="standings" role="tabpanel" aria-labelledby="tab-standings" tabindex="-1" hidden>
   <div class="wrap">
     <div class="band-head">
       <div class="eyebrow">Section E</div>
+      <h2>Standings</h2>
+      <p>Swiss stage standings for each division, from the results reported in Discord. Teams are seeded by the tie breakers of rule <a href="#r5-6">5.6</a>: series wins, then game difference, head-to-head and opponents’ total wins. The top 4 seeds go to the <a href="#r6-2">semi-finals</a>. Team stats come from the weekly post-game stats.</p>
+    </div>
+    <div class="seg-row" id="standTabs" aria-label="Division"></div>
+    <p class="hint st-meta" id="standMeta" aria-live="polite"></p>
+    <div id="standBox"></div>
+  </div>
+</section>
+<section class="band" id="schedule" role="tabpanel" aria-labelledby="tab-schedule" tabindex="-1" hidden>
+  <div class="wrap">
+    <div class="band-head">
+      <div class="eyebrow">Section F</div>
       <h2>Schedule</h2>
       <p>Matchups for each division. Week 1 is drawn; from week 2, teams play teams on the same record (rule <a href="#r6-1">6.1</a>). The top 4 seeds go to the <a href="#r6-2">semi-finals</a> (ties broken by rule <a href="#r5-6">5.6</a>), and the two winners meet in the <a href="#r6-3">finals</a>.</p>
     </div>
@@ -911,7 +944,7 @@ button.rteam-head:hover .rteam-more { color: #fff; text-decoration-color: var(--
 <section class="band" id="stats" role="tabpanel" aria-labelledby="tab-stats" tabindex="-1" hidden>
   <div class="wrap">
     <div class="band-head">
-      <div class="eyebrow">Section F</div>
+      <div class="eyebrow">Section G</div>
       <h2>Stats</h2>
       <p>Player leaderboard for each division, ranked by KDA ((kills + assists) ÷ deaths over all games played). Stats are read from the post-game screenshots of reported games and updated weekly. Click a player for their averages and champions.</p>
     </div>
@@ -1922,14 +1955,108 @@ button.rteam-head:hover .rteam-more { color: #fff; text-decoration-color: var(--
     statsKey = b.dataset.k; store.set("wtl-stats", statsKey); renderStats();
   });
 
+  // ---------- Standings (Swiss records from the Results sheet, seeded with the 5.6 tie breakers) ----------
+  let standKey = store.get("wtl-stand");
+  if (!PLAYING[standKey]) standKey = "na1";
+  // Bye teams for 7-team divisions come from SCHEDULE (bye brackets); a bye = series win, 0 game difference (6.1.5)
+  function byesOf(key) {
+    const out = [];
+    stagesFor(key).forEach(st => st.brackets.forEach((b, bi) => {
+      const n = b.bye && ((SCHEDULE[key] || {})[st.id] || [])[bi]; if (n && n[0]) out.push({ stage: st.id, team: n[0] });
+    }));
+    return out;
+  }
+  function computeStandings(key, teams, games, stats) {
+    const T = new Map(teams.map(n => [norm(n), { name: n, w: 0, l: 0, byes: 0, gw: 0, gl: 0, opps: [], beat: [], played: 0,
+      k: 0, d: 0, a: 0, cs: [], sgames: new Set() }]));
+    const swiss = games.filter(x => ["w1", "w2", "w3"].includes(x.stage));
+    // games and series per stage and pair
+    const series = new Map();
+    swiss.forEach(x => {
+      const w = T.get(norm(x.winner)), l = T.get(norm(x.loser)); if (!w || !l) return;
+      const id = x.stage + "|" + [norm(x.winner), norm(x.loser)].sort().join("|");
+      if (!series.has(id)) series.set(id, new Map());
+      const m = series.get(id); m.set(norm(x.winner), (m.get(norm(x.winner)) || 0) + 1); m.set(norm(x.loser), m.get(norm(x.loser)) || 0);
+    });
+    series.forEach(m => {
+      const [[a, ga], [b, gb]] = [...m.entries()];
+      if (Math.max(ga, gb) < 2) return; // series still in progress
+      const [win, lose] = ga > gb ? [a, b] : [b, a];
+      const W = T.get(win), L = T.get(lose), gW = m.get(win), gL = m.get(lose);
+      W.gw += gW; W.gl += gL; L.gw += gL; L.gl += gW;
+      W.w++; L.l++; W.played++; L.played++; W.opps.push(lose); L.opps.push(win); W.beat.push(lose);
+    });
+    byesOf(key).forEach(b => { const t = T.get(norm(b.team)); if (t) { t.w++; t.byes++; } });
+    stats.forEach(x => { const t = T.get(norm(x.team)); if (!t) return; t.k += x.k; t.d += x.d; t.a += x.a; if (x.cs != null) t.cs.push(x.cs); t.sgames.add(x.stage + "|" + x.game); });
+    const list = [...T.values()];
+    list.forEach(t => { t.gd = t.gw - t.gl; t.ow = t.opps.reduce((s, o) => s + T.get(o).w, 0); t.n = t.w + t.l; });
+    // 5.6: wins, game difference, head-to-head (within the tied group), opponents' total wins; still tied = Death Match
+    const keys = [t => t.w, t => t.gd, (t, g) => t.beat.filter(o => g.some(x => norm(x.name) === o)).length, t => t.ow];
+    function refine(group, step) {
+      if (group.length < 2 || step >= keys.length) return [group];
+      const val = t => keys[step](t, group), vals = [...new Set(group.map(val))].sort((x, y) => y - x);
+      return vals.flatMap(v => refine(group.filter(t => val(t) === v), step + 1));
+    }
+    const groups = refine(list.sort((x, y) => x.name.localeCompare(y.name)), 0);
+    let seed = 1;
+    groups.forEach(g => { g.forEach(t => { t.seed = seed; t.tied = g.length > 1; }); seed += g.length; });
+    return groups.flat();
+  }
+  async function renderStandings() {
+    $("standTabs").innerHTML = Object.entries(PLAYING).map(([k, L]) =>
+      `<button type="button" class="seg" aria-pressed="${k === standKey}" data-k="${k}">${esc(L.name)}</button>`).join("");
+    const key = standKey;
+    $("standMeta").textContent = "Loading standings…"; $("standBox").innerHTML = "";
+    const [res, st, teams] = await Promise.all([loadResults(), loadStats(), loadStatTeams(key)]);
+    if (key !== standKey) return;
+    const accepted = teams.filter(t => t.st === "ok").map(t => t.name);
+    const rows = computeStandings(key, accepted, res.filter(x => x.div === key), st.filter(x => x.div === key));
+    const started = rows.some(t => t.n);
+    const n = rows.length;
+    $("standMeta").textContent = `${LEAGUES[key].name} · ${n} teams · ${started ? "seeds update as results are reported." : "no series played yet: all teams start at 0–0, seeds are set after week 1."}`;
+    if (!n) { $("standBox").innerHTML = `<div class="st-empty">No accepted teams yet.</div>`; return; }
+    const sgn = v => v > 0 ? `<span class="pos">+${v}</span>` : v < 0 ? `<span class="neg">${v}</span>` : "0";
+    const f2 = v => v == null || !Number.isFinite(v) ? "—" : v.toFixed(2);
+    $("standBox").innerHTML = `<div class="tablebox"><table class="data sd">
+      <thead>
+        <tr><th></th><th></th><th class="grp" colspan="${n === 7 ? 5 : 4}">Swiss</th><th class="grp hide-sm" colspan="4">Team stats</th></tr>
+        <tr><th class="n">Seed</th><th>Team</th><th class="n">Series</th><th class="n">Games</th><th class="n">Diff</th><th class="n hide-sm" title="Opponents’ total series wins">Opp. wins</th>${n === 7 ? `<th class="n hide-sm">Byes</th>` : ""}
+          <th class="n hide-sm">Kills / game</th><th class="n hide-sm">Deaths / game</th><th class="n hide-sm">KDA</th><th class="n hide-sm">CS/min</th></tr>
+      </thead>
+      <tbody>${rows.map((t, i) => {
+        const g = t.sgames.size, initials = t.name.split(/\s+/).filter(Boolean).slice(0, 2).map(w => w[0]).join("").toUpperCase();
+        const cls = [started && t.seed <= 4 ? "q" : "", started && i === 3 && n > 4 ? "cut" : ""].filter(Boolean).join(" ");
+        return `<tr${cls ? ` class="${cls}"` : ""}>
+          <td class="n seed">${started ? t.seed : "–"}</td>
+          <td class="tm"><div class="tmw"><img class="rteam-logo" src="assets/logos/${slugify(t.name)}.png" alt="" data-initials="${esc(initials)}"><span class="tmn">${esc(t.name)}${started && t.tied && t.seed <= 4 ? `<span class="tie" title="Still tied after the first 4 tie breakers: Top Lane Death Match (5.6)">Tie</span>` : ""}</span></div></td>
+          <td class="n rec">${t.w}–${t.l}</td>
+          <td class="n">${t.gw}–${t.gl}</td>
+          <td class="n">${sgn(t.gd)}</td>
+          <td class="n hide-sm">${t.ow}</td>${n === 7 ? `<td class="n hide-sm">${t.byes}</td>` : ""}
+          <td class="n hide-sm">${g ? (t.k / g).toFixed(1) : "—"}</td>
+          <td class="n hide-sm">${g ? (t.d / g).toFixed(1) : "—"}</td>
+          <td class="n hide-sm">${g ? f2((t.k + t.a) / Math.max(1, t.d)) : "—"}</td>
+          <td class="n hide-sm">${t.cs.length ? (t.cs.reduce((s, v) => s + v, 0) / t.cs.length).toFixed(1) : "—"}</td></tr>`;
+      }).join("")}</tbody></table></div>
+      <p class="sd-key">Series and games count finished Swiss series only (weeks 1–3): a series counts once a team reaches 2 wins.${n === 7 ? " A bye counts as a series win with 0 game difference (6.1.5)." : ""} The pink line marks the top 4 seeds. “Tie” marks teams in the top 4 that are still level after the first 4 tie breakers; if it stays that way after week 3, they play a Top Lane Death Match (5.6). Team stats are per game from the weekly post-game stats; KDA is (kills + assists) ÷ deaths.</p>`;
+    $("standBox").querySelectorAll("img.rteam-logo").forEach(img => img.addEventListener("error", () => {
+      const d = document.createElement("div"); d.className = "rteam-mono"; d.setAttribute("aria-hidden", "true"); d.textContent = img.dataset.initials; img.replaceWith(d);
+    }, { once: true }));
+  }
+  $("standTabs").addEventListener("click", e => {
+    const b = e.target.closest("[data-k]"); if (!b) return;
+    standKey = b.dataset.k; store.set("wtl-stand", standKey); renderStandings();
+  });
+
   // ---------- Tabs ----------
-  const TABS = ["rules", "slope", "calculator", "roster", "schedule", "stats"];
+  const TABS = ["rules", "slope", "calculator", "roster", "standings", "schedule", "stats"];
   const tabBtns = [...document.querySelectorAll('.tabbar [role="tab"]')];
   function showTab(id, focus) {
     TABS.forEach(t => { $(t).hidden = t !== id; });
     tabBtns.forEach(b => { const on = b.dataset.tab === id; b.setAttribute("aria-selected", on); b.tabIndex = on ? 0 : -1; if (on && focus) b.focus(); });
     store.set("wtl-tab", id);
     if (id === "roster") loadRoster();
+    if (id === "standings") renderStandings();
     if (id === "schedule") renderSchedule();
     if (id === "stats") renderStats();
   }
