@@ -216,14 +216,14 @@ SLOPE Evaluation
 [2.3.3.1] If a team uses subs, this rule stays the same. For each game played, at least 4 players must be a WTL member.
 3.0 Roster Changes
 3.1 Mid-Match substitutions and Roster Announcements
-[3.1.1] Substitute players already on a team’s roster are allowed to play in any given game. But may be given a ban penalty (see [3.1.2.3]).
-[3.1.2] Captains should confirm what their roster will be at least 24 hours in advance and post it in the roster announcement channel if their roster isn’t made of their 5 starters. (if you play with your 5 starters, no announcement is necessary)
-[3.1.2.1] If a team plans on making substitutions during a match, the sub needs to be on the announced roster and it must be announced in which games they will be playing in the announcement mentioned in [3.1.2]. (see [3.1.2.3])
-[3.1.2.2] The announced roster must be between 5 and 7 players.
-[3.1.2.3] If any last minute change must be made, the team may change it, but must give 10 additional minutes to the enemy team to prepare and will lose two bans during the first ban phase for all games in which the roster isn’t what was announced 24 hours before the game.
+[3.1.1] Any substitute on a team’s roster may play in any game, but the team may be given a ban penalty (see [3.1.2.3]).
+[3.1.2] If a team will not play with its 5 starters, the captain should post the match roster in the roster announcement channel at least 24 hours in advance. If the team plays with its 5 starters, no announcement is needed.
+[3.1.2.1] If a team plans to make substitutions during a match, each sub must be on the announced roster, and the announcement in [3.1.2] must say which games each sub will play (see [3.1.2.3]).
+[3.1.2.2] The announced roster must have between 5 and 7 players.
+[3.1.2.3] A team may still change its roster at the last minute, but it must give the other team 10 extra minutes to prepare, and it loses two bans in the first ban phase of every game where its roster differs from the one announced 24 hours before the game.
 3.2 Other Roster Stipulations
-[3.2.1] If a player is removed from a team for rule violations or any other reason, that player’s team will have 1 week from the league’s announcement of the ruling to fill that player's spot on that team’s roster. The new player must be of equal or lower point value.
-[3.2.2] An individual player is only allowed to be registered on 1 roster at a time as a starter and may be a sub in another team from another division.
+[3.2.1] If a player is removed from a team for breaking the rules or for any other reason, the team has 1 week from the league’s announcement of the ruling to fill that spot on its roster. The new player must have an equal or lower point value.
+[3.2.2] A player can be a starter on only 1 roster at a time. They may also be a sub on another team, as long as that team is in a different division.
 4.0 Pauses, Disconnects, Remakes, Forfeits
 4.1 Pauses and Breaks
 [4.1.1] If a player disconnects, or if any serious issue occurs, the game can be paused for up to 10 minutes by each team per individual game.  If the pause surpasses 10 total minutes of pause time from a singular team, the game must unpause and be played out or the offending team must forfeit.
@@ -255,7 +255,7 @@ SLOPE Evaluation
 * Support
 5.4 Side Selection
 [5.4.1] Side selection is chosen through a coin flip. Both captains shall go in the coin flip channel where one captain will flip a coin on this website or simply on google. The captain that won the coin flip can choose between Red or Blue side. All games after the first are the loser's choice: the team that lost the most recent game has side selection in the next game.
-[5.4.2] In semi-finals, side selection is chosen by coin flip as well (see [5.4.1]), but the team that has a 3W-0L record in the Swiss stage will have automatic side selection as well as opponent choice.
+[5.4.2] In semi-finals, side selection is chosen by coin flip as well (see [5.4.1]), but the 1st seed of the Swiss stage will have automatic side selection as well as opponent choice.
 [5.4.3] For finals, side selection is decided by a coin flip (see [5.4.1])
 [5.4.4] In the playoffs, the team with side selection of the first game must communicate their decision at least twenty four (24) hours prior to the start of the match with their roster. If this team does not decide on a side by this time, the side selection will be decided like in regular season with a coin flip.
 5.5 Schedules
@@ -266,7 +266,7 @@ SLOPE Evaluation
 [5.5.4.1] If both captains can find a time that works better for them, they are free to change the date and time of their game as long as it’s in the same week. If an agreement can’t be reached, the game has to be played at the default time.
 [5.5.5] Finals have to be played at a preset time (more info coming soon)
 5.6 Tie Breakers
-[5.6.1] Here are the tie breakers in order of priority:
+[5.6.1] These tie breakers apply to any tie in the standings. Here are the tie breakers in order of priority:
 * Match wins: Series record.
 * Game difference: games won minus games lost across all Bo3s. 
 * Head-to-head: who won the series between the tied teams, if they played each other. 
@@ -282,11 +282,11 @@ SLOPE Evaluation
 [6.1.1] The initial matchups are decided with a draw.
 [6.1.2] After the first week, each team will be placed in a bracket according the the results of the precedent week (1-0 bracket and 0-1 bracket)
 [6.1.3] This process will be repeated an additional time for 3 total matches.
-[6.1.4] After those 3 matches, each team that won at least 2 games (4 teams) will move on to the semi-finals, and the team that went 3-0 will get side selection and opponent choice for semi-finals.
+[6.1.4] After those 3 matches, the top 4 seeds will move on to the semi-finals, and the 1st seed will get side selection and opponent choice for semi-finals. Ties are broken with [5.6].
 
 6.2 Semi-Finals
-[6.2.1] The team that went 3-0 in Swiss will get to choose their opponent and the other 2 teams will play against each other. (see [5.4.2])
-[6.2.2] The 3-0 team will have to let the other team know who their opponent choice is by Monday 8pm (EST/CET) of the semi-finals week at the latest and their side selection 24 hours in advance.
+[6.2.1] The 1st seed will get to choose their opponent and the other 2 teams will play against each other. (see [5.4.2])
+[6.2.2] The 1st seed will have to let the other team know who their opponent choice is by Monday 8pm (EST/CET) of the semi-finals week at the latest and their side selection 24 hours in advance.
 
 6.3 Finals
 [6.3.1] Finals will be played in a Best-of-5 format between the 2 winning teams of semi-finals
