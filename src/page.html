@@ -535,7 +535,8 @@ button.rteam-head:hover .rteam-more { color: #fff; text-decoration-color: var(--
             </div>
             <div class="rule nested"><span class="rid">2.3.1.1</span><p>This is a soft cap and the league holds the right to accept or deny any team with the goal to have as many teams competing while holding our standards regarding competitive integrity.</p></div>
             <div class="rule"><span class="rid">2.3.2</span><p>Substitutes must be at or below the point evaluation of their starting player.</p></div>
-            <div class="rule"><span class="rid">2.3.3</span><p>4 out of the 5 starting players of each team must be a member of the WTL academies. The remaining one may be a non-members. This rule will keep being applied for the full duration of the event.</p></div>
+            <div class="rule nested"><span class="rid">2.3.3.1</span><p>4 out of the 5 players of each team must be a member of the WTL academies. The remaining one may be a non-members. This rule will keep being applied for the full duration of the event.</p></div>
+            <div class="rule nested"><span class="rid">2.3.3.2</span><p>If a team uses subs, this rule stays the same. For each game played, at least 4 players must be a WTL member</p></div>
           </div>
         </div>
 
@@ -1141,7 +1142,7 @@ button.rteam-head:hover .rteam-more { color: #fff; text-decoration-color: var(--
     add(inRange, `TPE ${tpe} within ${L.name} soft cap of ${lo}–${hi} (2.3.1)`);
     add(ps.length >= 5 && ps.length <= 10, `Roster of 5–10 player slots (${ps.length} used, 2.1.1)`);
     const acad = starters.filter(o => o.p.academy).length;
-    add(acad >= 4, `At least 4 of 5 starters are WTL academy members (${acad}, 2.3.3)`);
+    add(acad >= 4, `At least 4 of 5 starters are WTL academy members (${acad}, 2.3.3.1)`);
     const below = ps.filter(o => o.r.pt.below).length;
     add(below <= 1, `At most one player below the point bracket (${below}, 1.2.4)`);
     const above = ps.filter(o => o.r.pt.above);
@@ -1510,7 +1511,7 @@ button.rteam-head:hover .rteam-more { color: #fff; text-decoration-color: var(--
         </table></div>
         ${t.staff.length ? `<p class="hint">Staff: ${t.staff.map(p => `${esc(p.role)} ${who(p)}`).join(" · ")}</p>` : ""}
         <ul class="checks">${checks.join("")}</ul>
-        <p class="hint">SLOPE and points are set by league staff when the team signs up, from the player's ranked solo/duo data on OP.GG: current rank, season peak (2025–26 peak with under 200 games), games played, games on their most played champion and role status. Players can climb afterwards without changing their points (1.2.1). Academy membership (2.3.3) is checked by staff.</p>
+        <p class="hint">SLOPE and points are set by league staff when the team signs up, from the player's ranked solo/duo data on OP.GG: current rank, season peak (2025–26 peak with under 200 games), games played, games on their most played champion and role status. Players can climb afterwards without changing their points (1.2.1). Academy membership (2.3.3.1, and for every game played with subs, 2.3.3.2) is checked by staff.</p>
       </div>`;
   }
   const dlg = $("teamDlg");
