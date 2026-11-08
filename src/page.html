@@ -2016,7 +2016,7 @@ button.rteam-head:hover .rteam-more { color: #fff; text-decoration-color: var(--
     const rows = computeStandings(key, accepted, res.filter(x => x.div === key));
     const started = rows.some(t => t.played); // seeds only once a real series is finished (a bye alone doesn’t seed)
     const n = rows.length;
-    $("standMeta").textContent = `${LEAGUES[key].name} · ${n} teams · ${started ? "seeds update as results are reported." : "no series played yet: all teams start at 0–0, seeds are set after week 1."}`;
+    $("standMeta").textContent = `${LEAGUES[key].name} · ${n} teams · ${started ? "seeds update as results are reported." : "no series finished yet: seeds are set once week 1 results come in."}`;
     if (!n) { $("standBox").innerHTML = `<div class="st-empty">No accepted teams yet.</div>`; return; }
     const sgn = v => v > 0 ? `<span class="pos">+${v}</span>` : v < 0 ? `<span class="neg">${v}</span>` : "0";
     $("standBox").innerHTML = `<div class="tablebox"><table class="data sd">
