@@ -277,6 +277,8 @@ footer.foot .wrap { padding-block: 24px; display: flex; flex-wrap: wrap; gap: 8p
 .slot.win .sc { color: var(--ok); }
 .slot.win .t::after { content: "Winner"; display: inline-block; margin-left: 8px; padding: 3px 6px; border-radius: 3px; background: var(--ok-soft); color: var(--ok); font: 600 10px/1 var(--font-display); letter-spacing: .1em; text-transform: uppercase; vertical-align: 3px; }
 .slot.lose { opacity: .55; }
+.slot.byed .t::after { content: "Bye · Win"; display: inline-block; margin-left: 8px; padding: 3px 6px; border-radius: 3px; background: var(--sunk); color: var(--soft); font: 600 10px/1 var(--font-display); letter-spacing: .1em; text-transform: uppercase; vertical-align: 3px; }
+.mt.bye { border-style: dashed; }
 .res-log { margin-top: 26px; }
 .res-log h3 { margin: 0 0 10px; font: 700 20px/1.1 var(--font-display); text-transform: uppercase; letter-spacing: .04em; }
 .res-log ol { list-style: none; margin: 0; padding: 0; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); }
@@ -1656,16 +1658,35 @@ button.rteam-head:hover .rteam-more { color: #fff; text-decoration-color: var(--
 
   // ---------- Schedule (Swiss stage 6.1, semi-finals 6.2, finals 6.3) ----------
   // To fill in matchups, put team names (exactly as on the roster sheet, so the logo matches) in SCHEDULE.
-  // Each stage is a list of brackets in the order below; each bracket is a flat list of names, two per match.
+  // Each stage is a list of brackets in the order of that division's layout (LAYOUTS); each bracket is a flat list of names,
+  // two per match, or one name for a bye bracket.
   // e.g. SCHEDULE.na1 = { w1: [["Wire Dolves", "shadowz", "Pengu ...", "...", ...]], w2: [[...1W-0L], [...0W-1L]], w3: [[2W-0L], [1W-1L], [0W-2L]], po: [[semis], [finals]] }
-  const STAGES = [
-    { id: "w1", title: "Week 1", note: "Initial draw", brackets: [{ label: "All teams", slots: 8 }] },
-    { id: "w2", title: "Week 2", note: "Paired by record", brackets: [{ label: "1W – 0L", slots: 4 }, { label: "0W – 1L", slots: 4 }] },
-    { id: "w3", title: "Week 3", note: "Paired by record", brackets: [{ label: "2W – 0L", slots: 2 }, { label: "1W – 1L", slots: 4 }, { label: "0W – 2L", slots: 2 }] },
-    { id: "po", title: "Playoffs", note: "Top 4 after Swiss", brackets: [
-      { label: "Semi-finals", slots: 4, note: "The 1st seed picks its opponent and side (6.2). Best of 3." },
-      { label: "Finals", slots: 2, note: "Best of 5, or best of 3 if both teams agree (6.3)." } ] },
-  ];
+  //      SCHEDULE.na3 (7 teams) = { w1: [[6 names], ["Bye team"]], w2: [[4], [2], ["Bye team"]], w3: [[2], [4], ["Bye team"]], po: ... }
+  // Number of accepted teams per division decides the Swiss layout: 8 = standard, 7 = one bye per week (6.1.5),
+  // 6 = a cross match between record groups. Update when a division's team count changes.
+  const DIV_TEAMS = { na1: 8, na2: 8, na3: 7, eu1: 6 };
+  const PLAYOFFS = { id: "po", title: "Playoffs", note: "Top 4 seeds after Swiss", brackets: [
+    { label: "Semi-finals", slots: 4, note: "The 1st seed picks its opponent and side (6.2). Best of 3." },
+    { label: "Finals", slots: 2, note: "Best of 5, or best of 3 if both teams agree (6.3)." } ] };
+  const BYE_NOTE = "Counts as a win, 0 game difference (6.1.5).";
+  const LAYOUTS = {
+    8: [
+      { id: "w1", title: "Week 1", note: "Initial draw", brackets: [{ label: "All teams", slots: 8 }] },
+      { id: "w2", title: "Week 2", note: "Paired by record", brackets: [{ label: "1W – 0L", slots: 4 }, { label: "0W – 1L", slots: 4 }] },
+      { id: "w3", title: "Week 3", note: "Paired by record", brackets: [{ label: "2W – 0L", slots: 2 }, { label: "1W – 1L", slots: 4 }, { label: "0W – 2L", slots: 2 }] },
+    ],
+    7: [
+      { id: "w1", title: "Week 1", note: "Initial draw · 1 bye", brackets: [{ label: "Matches", slots: 6 }, { label: "Bye", slots: 1, bye: true, note: "Drawn. " + BYE_NOTE }] },
+      { id: "w2", title: "Week 2", note: "Paired by record · 1 bye", brackets: [{ label: "1W – 0L", slots: 4 }, { label: "0W – 1L", slots: 2 }, { label: "Bye · 0W – 1L", slots: 1, bye: true, note: "A 0W – 1L team that hasn’t had a bye. " + BYE_NOTE }] },
+      { id: "w3", title: "Week 3", note: "Paired by record · 1 bye", brackets: [{ label: "2W – 0L", slots: 2 }, { label: "1W – 1L", slots: 4 }, { label: "Bye · 0W – 2L", slots: 1, bye: true, note: BYE_NOTE }] },
+    ],
+    6: [
+      { id: "w1", title: "Week 1", note: "Initial draw", brackets: [{ label: "All teams", slots: 6 }] },
+      { id: "w2", title: "Week 2", note: "By record + cross match", brackets: [{ label: "1W – 0L", slots: 2 }, { label: "Cross match · 1W – 0L vs 0W – 1L", slots: 2, note: "Teams drawn, no rematch." }, { label: "0W – 1L", slots: 2 }] },
+      { id: "w3", title: "Week 3", note: "Paired by record", brackets: [{ label: "By record", slots: 6, note: "Same records play each other. If two record groups are uneven, one cross match between them (2W – 0L vs 1W – 1L, or 1W – 1L vs 0W – 2L)." }] },
+    ],
+  };
+  const stagesFor = key => [...(LAYOUTS[DIV_TEAMS[key]] || LAYOUTS[8]), PLAYOFFS];
   const SCHEDULE = {};
   let schedKey = store.get("wtl-sched");
   if (!PLAYING[schedKey]) schedKey = "na1";
@@ -1707,19 +1728,21 @@ button.rteam-head:hover .rteam-more { color: #fff; text-decoration-color: var(--
     $("schedTabs").innerHTML = Object.entries(PLAYING).map(([k, L]) =>
       `<button type="button" class="seg" aria-pressed="${k === schedKey}" data-k="${k}">${esc(L.name)}</button>`).join("");
     const eu = schedKey.startsWith("eu");
-    $("schedMeta").textContent = `${LEAGUES[schedKey].name} · default match time Friday ${eu ? "7 pm CET" : "8 pm EST"}, or any day that week if both captains agree (rule 5.5). Results are reported in Discord and show here right away.`;
+    const n = DIV_TEAMS[schedKey] || 8, fmt = n === 7 ? " One team has a bye each week (rule 6.1.5)." : n === 6 ? " With 6 teams, week 2 has one cross match between the 1W – 0L and 0W – 1L groups." : "";
+    $("schedMeta").textContent = `${LEAGUES[schedKey].name} · ${n} teams · default match time Friday ${eu ? "7 pm CET" : "8 pm EST"}, or any day that week if both captains agree (rule 5.5).${fmt} Results are reported in Discord and show here right away.`;
     const key = schedKey, data = SCHEDULE[key] || {};
     const all = (results || []).filter(x => x.div === key);
     const box = $("schedBox");
     const draw = list => {
       if (key !== schedKey) return;
-      box.innerHTML = STAGES.map(st => {
+      box.innerHTML = stagesFor(key).map(st => {
         const body = st.brackets.map((b, bi) => {
           const names = ((data[st.id] || [])[bi]) || [];
           const stage = st.id === "po" ? (bi === 0 ? "semi" : "final") : st.id;
           const need = stage === "final" ? 3 : 2;
           let rows = "";
-          for (let i = 0; i < b.slots; i += 2) {
+          if (b.bye) rows = `<div class="mt bye">${schedSlot(names[0], null, names[0] ? "byed" : "")}</div>`;
+          else for (let i = 0; i < b.slots; i += 2) {
             const a = names[i], c = names[i + 1];
             let sa = null, sc = null, stA = "", stC = "";
             if (a && c) {
