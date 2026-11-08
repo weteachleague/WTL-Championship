@@ -265,6 +265,13 @@ SLOPE Evaluation
 [5.5.4]The default time will be Friday 8 pm EST for NA and Friday 7pm CET for EU
 [5.5.4.1] If both captains can find a time that works better for them, they are free to change the date and time of their game as long as it’s in the same week. If an agreement can’t be reached, the game has to be played at the default time.
 [5.5.5] Finals have to be played at a preset time (more info coming soon)
+5.6 Tie Breakers
+[5.6.1] Here are the tie breakers in order of priority:
+* Match wins: Series record.
+* Game difference: games won minus games lost across all Bo3s. 
+* Head-to-head: who won the series between the tied teams, if they played each other. 
+* Opponents’ total wins: teams that faced tougher opponents rank higher.
+* Top Lane Death Match: Both top laners have to 1 v 1 in a skill matchup of their choice (both have to agree) on summoner’s rift. If an OTP wants his champion no matter what, he may declare it, but the other player gets counterpick choice. First one who gets a kill, first tower, or 100 CS wins the game. Win the 1 v 1 twice to win the tie breaker (Bo3). 
 
 6.0 Championship Format
 6.1 Swiss Stage

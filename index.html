@@ -125,6 +125,11 @@ table.data th.n { text-align: right; }
 .roles { display: flex; flex-wrap: wrap; gap: 6px; margin: 0; padding: 0; list-style: none; counter-reset: r; }
 .roles li { counter-increment: r; font: 500 14px/1 var(--font-display); letter-spacing: .08em; text-transform: uppercase; padding: 9px 12px; border-radius: 3px; background: var(--sunk); }
 .roles li::before { content: counter(r) " · "; color: var(--magenta); }
+.tb { margin: 0 0 0 calc(4.6em + 10px); padding: 0; list-style: none; counter-reset: tb; display: grid; gap: 8px; }
+.tb li { counter-increment: tb; display: grid; grid-template-columns: 2em minmax(0, 1fr); color: var(--soft); }
+.tb li::before { content: counter(tb) "."; font: 600 15px/1.6 var(--font-display); color: var(--magenta); }
+.tb b { color: #fff; }
+@media (max-width: 560px) { .tb { margin-left: 0; } }
 
 /* Point tables */
 .div-tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
@@ -501,6 +506,7 @@ button.rteam-head:hover .rteam-more { color: #fff; text-decoration-color: var(--
           <li class="toc-sub"><a href="#r5-3">5.3 Draft</a></li>
           <li class="toc-sub"><a href="#r5-4">5.4 Side Selection</a></li>
           <li class="toc-sub"><a href="#r5-5">5.5 Schedules</a></li>
+          <li class="toc-sub"><a href="#r5-6">5.6 Tie Breakers</a></li>
           <li class="toc-ch"><a href="#r6">6.0 Championship Format</a></li>
           <li class="toc-sub"><a href="#r6-1">6.1 Swiss Stage</a></li>
           <li class="toc-sub"><a href="#r6-2">6.2 Semi-Finals</a></li>
@@ -683,6 +689,17 @@ button.rteam-head:hover .rteam-more { color: #fff; text-decoration-color: var(--
             <div class="rule"><span class="rid">5.5.4</span><p>The default time will be Friday 8 pm EST for NA and Friday 7pm CET for EU</p></div>
             <div class="rule nested"><span class="rid">5.5.4.1</span><p>If both captains can find a time that works better for them, they are free to change the date and time of their game as long as it’s in the same week. If an agreement can’t be reached, the game has to be played at the default time.</p></div>
             <div class="rule"><span class="rid">5.5.5</span><p>Finals have to be played at a preset time (more info coming soon)</p></div>
+          </div>
+          <div class="sub" id="r5-6">
+            <h4><span class="num">5.6</span>Tie Breakers</h4>
+            <div class="rule"><span class="rid">5.6.1</span><p>Here are the tie breakers in order of priority:</p></div>
+            <ol class="tb">
+              <li><span><b>Match wins:</b> Series record.</span></li>
+              <li><span><b>Game difference:</b> games won minus games lost across all Bo3s.</span></li>
+              <li><span><b>Head-to-head:</b> who won the series between the tied teams, if they played each other.</span></li>
+              <li><span><b>Opponents’ total wins:</b> teams that faced tougher opponents rank higher.</span></li>
+              <li><span><b>Top Lane Death Match:</b> Both top laners have to 1 v 1 in a skill matchup of their choice (both have to agree) on summoner’s rift. If an OTP wants his champion no matter what, he may declare it, but the other player gets counterpick choice. First one who gets a kill, first tower, or 100 CS wins the game. Win the 1 v 1 twice to win the tie breaker (Bo3).</span></li>
+            </ol>
           </div>
         </div>
 
