@@ -1743,45 +1743,78 @@ button.rteam-head:hover .rteam-more { color: #fff; text-decoration-color: var(--
     } catch { statRows = statRows || []; }
     return statRows;
   }
+  // Every player of the division's accepted teams is listed, at 0 until their first collected game.
+  const statTeams = {};
+  async function loadStatTeams(key) {
+    if (rosterCache[key]) return rosterCache[key];
+    if (statTeams[key]) return statTeams[key];
+    const src = ROSTER_SHEETS[key]; if (!src) return [];
+    try {
+      const r = await fetch(`https://docs.google.com/spreadsheets/d/${src.id}/gviz/tq?tqx=out:csv&headers=0&gid=${src.gid}`, { cache: "no-store" });
+      if (!r.ok) throw new Error(r.status);
+      const teams = parseTeams(parseCsv(await r.text()));
+      try {
+        const sr = await fetch(`https://docs.google.com/spreadsheets/d/${src.id}/gviz/tq?tqx=out:csv&headers=0&sheet=Status`, { cache: "no-store" });
+        if (sr.ok) {
+          const sm = new Map(parseCsv(await sr.text()).filter(([n, st]) => n && STATUS_RE.test((st || "").trim())).map(([n, st]) => [n.trim().replace(/\s*\(\d+\)\s*$/, "").toLowerCase(), st.trim()]));
+          teams.forEach(t => { const st = sm.get((t.name || "").trim().toLowerCase()); if (st) { t.status = st; t.st = statusKind(st); } });
+        }
+      } catch {}
+      return (statTeams[key] = teams);
+    } catch { return []; }
+  }
   const kdaOf = (k, d, a) => (k + a) / Math.max(1, d);
-  const kdaTxt = (k, d, a) => d === 0 ? "Perfect" : kdaOf(k, d, a).toFixed(2);
+  const kdaTxt = (k, d, a) => d === 0 && k + a > 0 ? "Perfect" : kdaOf(k, d, a).toFixed(2);
   const avg = (list, f) => { const v = list.map(f).filter(x => x != null); return v.length ? v.reduce((s, x) => s + x, 0) / v.length : null; };
-  const f1 = n => n == null ? "—" : n.toFixed(1);
-  function aggregate(rows) {
-    const by = new Map();
-    rows.forEach(x => { const key = norm(x.name); if (!by.has(key)) by.set(key, []); by.get(key).push(x); });
-    return [...by.values()].map(g => {
-      const K = g.reduce((s, x) => s + x.k, 0), D = g.reduce((s, x) => s + x.d, 0), A = g.reduce((s, x) => s + x.a, 0);
-      const wins = g.filter(x => x.win).length;
-      return { name: g[g.length - 1].name, team: g[g.length - 1].team, games: g, n: g.length, wins, K, D, A,
-        kda: kdaOf(K, D, A), cs: avg(g, x => x.cs), gold: avg(g, x => x.gold) };
-    }).sort((p, q) => q.kda - p.kda || q.n - p.n || p.name.localeCompare(q.name));
+  const f1 = n => n == null || !Number.isFinite(n) ? "—" : n.toFixed(1);
+  const per = (tot, n) => n ? tot / n : 0;
+  const csTxt = p => p.n ? f1(p.cs) : "0.0";
+  function aggregate(rows, teams) {
+    // Roster players first (accepted teams, starters then subs), then anyone in the stats who isn't on a roster
+    const players = [], byName = new Map();
+    teams.filter(t => t.st === "ok").forEach((t, ti) => [...t.starters, ...t.subs].forEach((p, pi) => {
+      const pl = { name: p.name.trim(), raw: p.raw, team: t.name, role: p.subFor ? `${SUB_LABEL[p.subFor]} sub` : p.role, order: ti * 20 + pi, games: [] };
+      players.push(pl);
+      [norm(p.raw), norm(p.name)].forEach(k => { if (k && !byName.has(k)) byName.set(k, pl); });
+    }));
+    rows.forEach(x => {
+      let pl = byName.get(norm(x.name)) || byName.get(norm(x.ign));
+      if (!pl) { pl = { name: x.name, raw: x.name, team: x.team, role: "", order: 1e6, games: [] }; players.push(pl); byName.set(norm(x.name), pl); }
+      pl.games.push(x);
+    });
+    return players.map(pl => {
+      const g = pl.games, K = g.reduce((s, x) => s + x.k, 0), D = g.reduce((s, x) => s + x.d, 0), A = g.reduce((s, x) => s + x.a, 0);
+      return { ...pl, n: g.length, wins: g.filter(x => x.win).length, K, D, A, kda: g.length ? kdaOf(K, D, A) : 0,
+        cs: avg(g, x => x.cs), gold: avg(g, x => x.gold) };
+    }).sort((p, q) => q.kda - p.kda || q.n - p.n || p.order - q.order || p.name.localeCompare(q.name));
   }
   async function renderStats() {
     $("statsTabs").innerHTML = Object.entries(LEAGUES).map(([k, L]) =>
       `<button type="button" class="seg" aria-pressed="${k === statsKey}" data-k="${k}">${esc(L.name)}</button>`).join("");
     const key = statsKey;
-    const draw = rows => {
+    const draw = (rows, teams) => {
       if (key !== statsKey) return;
-      statPlayers = aggregate(rows);
-      $("statsMeta").textContent = statPlayers.length ? `${LEAGUES[key].name} · ${statPlayers.length} players · KDA = (kills + assists) ÷ deaths, all games combined.` : LEAGUES[key].name;
+      statPlayers = aggregate(rows, teams);
+      $("statsMeta").textContent = statPlayers.length ? `${LEAGUES[key].name} · ${statPlayers.length} players · ${rows.length ? "KDA = (kills + assists) ÷ deaths, all games combined." : "No games collected yet: everyone starts at 0."}` : LEAGUES[key].name;
       $("statsBox").innerHTML = !statPlayers.length
-        ? `<div class="st-empty">No stats yet for ${esc(LEAGUES[key].name)}. They appear here once the first week's games are played and collected.</div>`
+        ? `<div class="st-empty">No players yet for ${esc(LEAGUES[key].name)}. They appear here once teams are accepted.</div>`
         : `<div class="tablebox"><table class="data lb">
             <thead><tr><th class="n">#</th><th>Player</th><th class="n">Games</th><th class="n hide-sm">W–L</th><th class="n hide-sm">Avg K / D / A</th><th class="n">KDA</th><th class="n">CS/min</th></tr></thead>
             <tbody>${statPlayers.map((p, i) => `<tr>
               <td class="n rk">${i + 1}</td>
-              <td class="pl"><button type="button" class="pbtn" data-p="${i}" aria-haspopup="dialog">${esc(p.name)}</button>${p.team ? `<span class="team">${esc(p.team)}</span>` : ""}</td>
+              <td class="pl"><button type="button" class="pbtn" data-p="${i}" aria-haspopup="dialog">${esc(p.name)}</button>${p.team ? `<span class="team">${esc(p.team)}${p.role ? ` · ${esc(p.role)}` : ""}</span>` : ""}</td>
               <td class="n">${p.n}</td>
               <td class="n wl hide-sm"><span class="w">${p.wins}</span>–<span class="l">${p.n - p.wins}</span></td>
-              <td class="n kda-line hide-sm">${f1(p.K / p.n)}<i>/</i>${f1(p.D / p.n)}<i>/</i>${f1(p.A / p.n)}</td>
+              <td class="n kda-line hide-sm">${f1(per(p.K, p.n))}<i>/</i>${f1(per(p.D, p.n))}<i>/</i>${f1(per(p.A, p.n))}</td>
               <td class="n kda">${kdaTxt(p.K, p.D, p.A)}</td>
-              <td class="n">${p.cs == null ? "—" : p.cs.toFixed(1)}</td></tr>`).join("")}</tbody>
+              <td class="n">${csTxt(p)}</td></tr>`).join("")}</tbody>
           </table></div>`;
     };
-    draw((statRows || []).filter(x => x.div === key));
-    if (!statRows) $("statsMeta").textContent = "Loading stats…";
-    draw((await loadStats()).filter(x => x.div === key));
+    const cached = rosterCache[key] || statTeams[key];
+    if (statRows && cached) draw(statRows.filter(x => x.div === key), cached);
+    else { $("statsMeta").textContent = "Loading stats…"; $("statsBox").innerHTML = ""; }
+    const [rows, teams] = await Promise.all([loadStats(), loadStatTeams(key)]);
+    draw(rows.filter(x => x.div === key), teams);
   }
   function playerHtml(p) {
     const champs = new Map();
@@ -1790,29 +1823,29 @@ button.rteam-head:hover .rteam-more { color: #fff; text-decoration-color: var(--
       const w = g.filter(x => x.win).length, K = g.reduce((s, x) => s + x.k, 0), D = g.reduce((s, x) => s + x.d, 0), A = g.reduce((s, x) => s + x.a, 0);
       return { c, n: g.length, w, kda: kdaTxt(K, D, A), cs: avg(g, x => x.cs) };
     }).sort((a, b) => b.n - a.n || b.w - a.w || a.c.localeCompare(b.c));
-    const wr = n => Math.round((n.w / n.n) * 100);
-    const winPct = Math.round((p.wins / p.n) * 100);
+    const wr = n => n.n ? Math.round((n.w / n.n) * 100) : 0;
+    const winPct = p.n ? Math.round((p.wins / p.n) * 100) : 0;
     return `
       <header class="tdlg-head">
-        <div><div class="eyebrow">${esc(LEAGUES[statsKey].name)}${p.team ? ` · ${esc(p.team)}` : ""}</div><h3 id="pdlgTitle">${esc(p.name)}</h3></div>
+        <div><div class="eyebrow">${esc(LEAGUES[statsKey].name)}${p.team ? ` · ${esc(p.team)}` : ""}${p.role ? ` · ${esc(p.role)}` : ""}</div><h3 id="pdlgTitle">${esc(p.name)}</h3></div>
         <button type="button" class="tdlg-x" data-close aria-label="Close">×</button>
       </header>
       <div class="tdlg-body">
         <div class="ptiles">
           <div class="ptile"><div class="eyebrow">KDA</div><b>${kdaTxt(p.K, p.D, p.A)}</b><small>${p.K} / ${p.D} / ${p.A} total</small></div>
-          <div class="ptile"><div class="eyebrow">Avg K / D / A</div><b class="sm">${f1(p.K / p.n)} / ${f1(p.D / p.n)} / ${f1(p.A / p.n)}</b><small>per game</small></div>
-          <div class="ptile"><div class="eyebrow">CS / min</div><b>${p.cs == null ? "—" : p.cs.toFixed(1)}</b><small>average${p.gold != null ? ` · ${Math.round(p.gold)} gold/min` : ""}</small></div>
+          <div class="ptile"><div class="eyebrow">Avg K / D / A</div><b class="sm">${f1(per(p.K, p.n))} / ${f1(per(p.D, p.n))} / ${f1(per(p.A, p.n))}</b><small>per game</small></div>
+          <div class="ptile"><div class="eyebrow">CS / min</div><b>${csTxt(p)}</b><small>average${p.gold != null ? ` · ${Math.round(p.gold)} gold/min` : ""}</small></div>
           <div class="ptile"><div class="eyebrow">Games</div><b>${p.n}</b><small><span class="res-w">${p.wins}W</span> – <span class="res-l">${p.n - p.wins}L</span> · ${winPct}% wins</small></div>
         </div>
         <h4 class="pdlg-h">Champions played</h4>
         <div class="tablebox"><table class="data ptbl">
           <thead><tr><th>Champion</th><th class="n">Games</th><th>Win rate</th><th class="n">KDA</th><th class="n">CS/min</th></tr></thead>
-          <tbody>${champRows.map(c => `<tr><td>${esc(c.c)}</td><td class="n">${c.n}</td><td class="wrc"><span class="wr-bar" aria-hidden="true"><span style="width:${wr(c)}%"></span></span>${wr(c)}% <span class="wl-sm">(${c.w}–${c.n - c.w})</span></td><td class="n">${c.kda}</td><td class="n">${c.cs == null ? "—" : c.cs.toFixed(1)}</td></tr>`).join("")}</tbody>
+          <tbody>${champRows.length ? "" : `<tr><td colspan="5" class="wl-sm">No games yet</td></tr>`}${champRows.map(c => `<tr><td>${esc(c.c)}</td><td class="n">${c.n}</td><td class="wrc"><span class="wr-bar" aria-hidden="true"><span style="width:${wr(c)}%"></span></span>${wr(c)}% <span class="wl-sm">(${c.w}–${c.n - c.w})</span></td><td class="n">${c.kda}</td><td class="n">${c.cs == null ? "—" : c.cs.toFixed(1)}</td></tr>`).join("")}</tbody>
         </table></div>
         <h4 class="pdlg-h">Games</h4>
         <div class="tablebox"><table class="data ptbl">
           <thead><tr><th>Game</th><th>Champion</th><th>Result</th><th class="n">K / D / A</th><th class="n">CS/min</th></tr></thead>
-          <tbody>${p.games.map(x => `<tr><td>${esc(STAGE_LABEL[x.stage] || x.stage)} · G${x.game}${x.shot ? ` · <a href="${esc(x.shot)}" target="_blank" rel="noopener">screenshot</a>` : ""}</td><td>${esc(x.champ)}</td><td class="${x.win ? "res-w" : "res-l"}">${x.win ? "Win" : "Loss"}</td><td class="n">${x.k} / ${x.d} / ${x.a}</td><td class="n">${x.cs == null ? "—" : x.cs.toFixed(1)}</td></tr>`).join("")}</tbody>
+          <tbody>${p.games.length ? "" : `<tr><td colspan="5" class="wl-sm">No games yet</td></tr>`}${p.games.map(x => `<tr><td>${esc(STAGE_LABEL[x.stage] || x.stage)} · G${x.game}${x.shot ? ` · <a href="${esc(x.shot)}" target="_blank" rel="noopener">screenshot</a>` : ""}</td><td>${esc(x.champ)}</td><td class="${x.win ? "res-w" : "res-l"}">${x.win ? "Win" : "Loss"}</td><td class="n">${x.k} / ${x.d} / ${x.a}</td><td class="n">${x.cs == null ? "—" : x.cs.toFixed(1)}</td></tr>`).join("")}</tbody>
         </table></div>
       </div>`;
   }
