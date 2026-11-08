@@ -2014,7 +2014,7 @@ button.rteam-head:hover .rteam-more { color: #fff; text-decoration-color: var(--
     if (key !== standKey) return;
     const accepted = teams.filter(t => t.st === "ok").map(t => t.name);
     const rows = computeStandings(key, accepted, res.filter(x => x.div === key));
-    const started = rows.some(t => t.n);
+    const started = rows.some(t => t.played); // seeds only once a real series is finished (a bye alone doesn’t seed)
     const n = rows.length;
     $("standMeta").textContent = `${LEAGUES[key].name} · ${n} teams · ${started ? "seeds update as results are reported." : "no series played yet: all teams start at 0–0, seeds are set after week 1."}`;
     if (!n) { $("standBox").innerHTML = `<div class="st-empty">No accepted teams yet.</div>`; return; }
