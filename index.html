@@ -1781,7 +1781,13 @@ button.rteam-head:hover .rteam-more { color: #fff; text-decoration-color: var(--
     // Roster players first (accepted teams, starters then subs), then anyone in the stats who isn't on a roster
     const players = [], byName = new Map();
     teams.filter(t => t.st === "ok").forEach((t, ti) => [...t.starters, ...t.subs].forEach((p, pi) => {
-      const pl = { name: p.name.trim(), raw: p.raw, team: t.name, role: p.subFor ? `${SUB_LABEL[p.subFor]} sub` : p.role, order: ti * 20 + pi, games: [] };
+      const role = p.subFor ? `${SUB_LABEL[p.subFor]} sub` : p.role;
+      const dup = byName.get(norm(p.raw));
+      if (dup) { // same account in several slots (e.g. Mid sub and ADC sub): list it once
+        if (dup.team === t.name && !dup.role.split(" / ").includes(role)) dup.role = /sub$/.test(dup.role) && /sub$/.test(role) ? `${dup.role.replace(/ sub$/, "")} / ${role}` : `${dup.role} / ${role}`;
+        return;
+      }
+      const pl = { name: p.name.trim(), raw: p.raw, team: t.name, role, order: ti * 20 + pi, games: [] };
       players.push(pl);
       [norm(p.raw), norm(p.name)].forEach(k => { if (k && !byName.has(k)) byName.set(k, pl); });
     }));
