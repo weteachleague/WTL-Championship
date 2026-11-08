@@ -287,6 +287,49 @@ footer.foot .wrap { padding-block: 24px; display: flex; flex-wrap: wrap; gap: 8p
 .res-log a { color: inherit; text-decoration: underline; text-decoration-color: var(--line); text-underline-offset: 3px; }
 .res-log a:hover { text-decoration-color: var(--magenta); }
 
+/* ---------- Stats ---------- */
+#stats > .wrap { max-width: 1480px; }
+.st-meta { margin-bottom: 18px; }
+.lb td, .lb th { white-space: nowrap; }
+.lb td.rk { width: 1%; font: 700 18px/1 var(--font-display); color: var(--muted); font-variant-numeric: tabular-nums; }
+.lb tr:nth-child(1) td.rk, .lb tr:nth-child(2) td.rk, .lb tr:nth-child(3) td.rk { color: var(--magenta); }
+.lb td.pl { white-space: normal; min-width: 180px; }
+.lb .pbtn { font: 600 17px/1.25 var(--font-display); letter-spacing: .02em; color: #fff; background: none; border: 0; padding: 0; cursor: pointer; text-align: left; text-decoration: underline; text-decoration-color: var(--line); text-underline-offset: 4px; overflow-wrap: anywhere; }
+.lb .pbtn:hover { text-decoration-color: var(--magenta); }
+.lb .pbtn:focus-visible { outline: 2px solid var(--magenta); outline-offset: 2px; }
+.lb .team { display: block; font-size: 13.5px; color: var(--muted); }
+.lb td.kda { font: 700 18px/1 var(--font-display); color: #fff; }
+.lb .kda-line { color: var(--soft); }
+.lb .kda-line i { font-style: normal; color: var(--muted); padding: 0 2px; }
+.lb .wl .w { color: var(--ok); }
+.lb .wl .l { color: var(--bad); }
+.st-empty { border: 1px dashed var(--line); border-radius: var(--radius); padding: 28px 20px; color: var(--muted); text-align: center; }
+.ptiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; }
+.ptile { border: 1px solid var(--line); border-radius: var(--radius); background: var(--bg); padding: 14px; }
+.ptile .eyebrow { margin-bottom: 8px; }
+.ptile b { display: block; font: 700 30px/1 var(--font-display); color: #fff; font-variant-numeric: tabular-nums; }
+.ptile small { display: block; margin-top: 6px; font-size: 13px; color: var(--muted); }
+.pdlg-h { margin: 0; font: 700 18px/1.1 var(--font-display); text-transform: uppercase; letter-spacing: .04em; }
+.wr-bar { display: inline-block; width: 64px; height: 6px; border-radius: 3px; background: var(--bad-soft); vertical-align: middle; margin-right: 8px; overflow: hidden; }
+.wr-bar span { display: block; height: 100%; background: var(--ok); }
+.wl-sm { color: var(--muted); font-size: 13.5px; }
+.res-w { color: var(--ok); font-weight: 600; }
+.res-l { color: var(--bad); font-weight: 600; }
+@media (max-width: 700px) {
+  .lb .hide-sm { display: none; }
+  .lb td.pl { min-width: 0; }
+  table.data.lb th, table.data.lb td { padding: 8px 6px; }
+}
+#playerDlg .tdlg-body { align-content: start; }
+.ptbl td.wrc, .ptbl td.n, .ptbl th.n { white-space: nowrap; }
+@media (max-width: 560px) {
+  .wr-bar, .ptbl .wl-sm { display: none; }
+  table.data.ptbl { font-size: 14px; }
+  table.data.ptbl th, table.data.ptbl td { padding: 8px 5px; }
+  table.data.ptbl th { font-size: 11.5px; letter-spacing: .06em; }
+}
+.ptile b.sm { font-size: 22px; line-height: 30px; }
+
 /* ---------- Roster ---------- */
 .seg-row { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
 #rosterMeta { margin-bottom: 18px; }
@@ -417,6 +460,7 @@ button.rteam-head:hover .rteam-more { color: #fff; text-decoration-color: var(--
     <button type="button" role="tab" id="tab-calculator" aria-controls="calculator" aria-selected="false" tabindex="-1" data-tab="calculator"><span class="k">C</span>Calculator</button>
     <button type="button" role="tab" id="tab-roster" aria-controls="roster" aria-selected="false" tabindex="-1" data-tab="roster"><span class="k">D</span>Roster</button>
     <button type="button" role="tab" id="tab-schedule" aria-controls="schedule" aria-selected="false" tabindex="-1" data-tab="schedule"><span class="k">E</span>Schedule</button>
+    <button type="button" role="tab" id="tab-stats" aria-controls="stats" aria-selected="false" tabindex="-1" data-tab="stats"><span class="k">F</span>Stats</button>
   </div>
 </nav>
 
@@ -843,6 +887,19 @@ button.rteam-head:hover .rteam-more { color: #fff; text-decoration-color: var(--
     <div class="seg-row" id="schedTabs" aria-label="Division"></div>
     <p class="hint sched-meta" id="schedMeta"></p>
     <div class="sched" id="schedBox"></div>
+  </div>
+</section>
+<section class="band" id="stats" role="tabpanel" aria-labelledby="tab-stats" tabindex="-1" hidden>
+  <div class="wrap">
+    <div class="band-head">
+      <div class="eyebrow">Section F</div>
+      <h2>Stats</h2>
+      <p>Player leaderboard for each division, ranked by KDA ((kills + assists) ÷ deaths over all games played). Stats are read from the post-game screenshots of reported games and updated weekly. Click a player for their averages and champions.</p>
+    </div>
+    <div class="seg-row" id="statsTabs" aria-label="Division"></div>
+    <p class="hint st-meta" id="statsMeta" aria-live="polite"></p>
+    <div id="statsBox"></div>
+    <dialog id="playerDlg" class="tdlg" aria-labelledby="pdlgTitle"></dialog>
   </div>
 </section>
 </main>
@@ -1671,8 +1728,119 @@ button.rteam-head:hover .rteam-more { color: #fff; text-decoration-color: var(--
   });
   renderSchedule();
 
+  // ---------- Stats (Stats tab of the Results sheet, filled weekly from the post-game screenshots) ----------
+  // Columns: Division | Stage | Game | Team | Result | Player (in game) | Roster name | Champion | Kills | Deaths | Assists | CS/min | Gold/min | Screenshot | Message | Notes
+  let statsKey = store.get("wtl-stats");
+  if (!LEAGUES[statsKey]) statsKey = "na1";
+  let statRows = null, statsAt = 0, statPlayers = [];
+  const numOr = v => { const n = parseFloat(String(v || "").replace(/,/g, "")); return Number.isFinite(n) ? n : null; };
+  async function loadStats() {
+    if (statRows && Date.now() - statsAt < 60000) return statRows;
+    try {
+      const r = await fetch(`https://docs.google.com/spreadsheets/d/${RESULTS_SHEET.id}/gviz/tq?tqx=out:csv&headers=0&sheet=Stats`, { cache: "no-store" });
+      if (!r.ok) throw new Error(r.status);
+      statRows = parseCsv(await r.text()).slice(1).map(c => {
+        const champ = (c[7] || "").trim();
+        return { div: (c[0] || "").trim(), stage: (c[1] || "").trim(), game: +c[2] || 0, team: (c[3] || "").trim(),
+          win: /^(w|win|victory)/i.test((c[4] || "").trim()), result: (c[4] || "").trim(),
+          ign: (c[5] || "").trim(), name: (c[6] || "").trim() || (c[5] || "").trim(),
+          champ: !champ || champ.includes("?") ? "Unknown" : champ,
+          k: numOr(c[8]), d: numOr(c[9]), a: numOr(c[10]), cs: numOr(c[11]), gold: numOr(c[12]), shot: (c[13] || "").trim() };
+      }).filter(x => x.div && x.name && x.k != null && x.d != null && x.a != null);
+      statsAt = Date.now();
+    } catch { statRows = statRows || []; }
+    return statRows;
+  }
+  const kdaOf = (k, d, a) => (k + a) / Math.max(1, d);
+  const kdaTxt = (k, d, a) => d === 0 ? "Perfect" : kdaOf(k, d, a).toFixed(2);
+  const avg = (list, f) => { const v = list.map(f).filter(x => x != null); return v.length ? v.reduce((s, x) => s + x, 0) / v.length : null; };
+  const f1 = n => n == null ? "—" : n.toFixed(1);
+  function aggregate(rows) {
+    const by = new Map();
+    rows.forEach(x => { const key = norm(x.name); if (!by.has(key)) by.set(key, []); by.get(key).push(x); });
+    return [...by.values()].map(g => {
+      const K = g.reduce((s, x) => s + x.k, 0), D = g.reduce((s, x) => s + x.d, 0), A = g.reduce((s, x) => s + x.a, 0);
+      const wins = g.filter(x => x.win).length;
+      return { name: g[g.length - 1].name, team: g[g.length - 1].team, games: g, n: g.length, wins, K, D, A,
+        kda: kdaOf(K, D, A), cs: avg(g, x => x.cs), gold: avg(g, x => x.gold) };
+    }).sort((p, q) => q.kda - p.kda || q.n - p.n || p.name.localeCompare(q.name));
+  }
+  async function renderStats() {
+    $("statsTabs").innerHTML = Object.entries(LEAGUES).map(([k, L]) =>
+      `<button type="button" class="seg" aria-pressed="${k === statsKey}" data-k="${k}">${esc(L.name)}</button>`).join("");
+    const key = statsKey;
+    const draw = rows => {
+      if (key !== statsKey) return;
+      statPlayers = aggregate(rows);
+      $("statsMeta").textContent = statPlayers.length ? `${LEAGUES[key].name} · ${statPlayers.length} players · KDA = (kills + assists) ÷ deaths, all games combined.` : LEAGUES[key].name;
+      $("statsBox").innerHTML = !statPlayers.length
+        ? `<div class="st-empty">No stats yet for ${esc(LEAGUES[key].name)}. They appear here once the first week's games are played and collected.</div>`
+        : `<div class="tablebox"><table class="data lb">
+            <thead><tr><th class="n">#</th><th>Player</th><th class="n">Games</th><th class="n hide-sm">W–L</th><th class="n hide-sm">Avg K / D / A</th><th class="n">KDA</th><th class="n">CS/min</th></tr></thead>
+            <tbody>${statPlayers.map((p, i) => `<tr>
+              <td class="n rk">${i + 1}</td>
+              <td class="pl"><button type="button" class="pbtn" data-p="${i}" aria-haspopup="dialog">${esc(p.name)}</button>${p.team ? `<span class="team">${esc(p.team)}</span>` : ""}</td>
+              <td class="n">${p.n}</td>
+              <td class="n wl hide-sm"><span class="w">${p.wins}</span>–<span class="l">${p.n - p.wins}</span></td>
+              <td class="n kda-line hide-sm">${f1(p.K / p.n)}<i>/</i>${f1(p.D / p.n)}<i>/</i>${f1(p.A / p.n)}</td>
+              <td class="n kda">${kdaTxt(p.K, p.D, p.A)}</td>
+              <td class="n">${p.cs == null ? "—" : p.cs.toFixed(1)}</td></tr>`).join("")}</tbody>
+          </table></div>`;
+    };
+    draw((statRows || []).filter(x => x.div === key));
+    if (!statRows) $("statsMeta").textContent = "Loading stats…";
+    draw((await loadStats()).filter(x => x.div === key));
+  }
+  function playerHtml(p) {
+    const champs = new Map();
+    p.games.forEach(x => { if (!champs.has(x.champ)) champs.set(x.champ, []); champs.get(x.champ).push(x); });
+    const champRows = [...champs].map(([c, g]) => {
+      const w = g.filter(x => x.win).length, K = g.reduce((s, x) => s + x.k, 0), D = g.reduce((s, x) => s + x.d, 0), A = g.reduce((s, x) => s + x.a, 0);
+      return { c, n: g.length, w, kda: kdaTxt(K, D, A), cs: avg(g, x => x.cs) };
+    }).sort((a, b) => b.n - a.n || b.w - a.w || a.c.localeCompare(b.c));
+    const wr = n => Math.round((n.w / n.n) * 100);
+    const winPct = Math.round((p.wins / p.n) * 100);
+    return `
+      <header class="tdlg-head">
+        <div><div class="eyebrow">${esc(LEAGUES[statsKey].name)}${p.team ? ` · ${esc(p.team)}` : ""}</div><h3 id="pdlgTitle">${esc(p.name)}</h3></div>
+        <button type="button" class="tdlg-x" data-close aria-label="Close">×</button>
+      </header>
+      <div class="tdlg-body">
+        <div class="ptiles">
+          <div class="ptile"><div class="eyebrow">KDA</div><b>${kdaTxt(p.K, p.D, p.A)}</b><small>${p.K} / ${p.D} / ${p.A} total</small></div>
+          <div class="ptile"><div class="eyebrow">Avg K / D / A</div><b class="sm">${f1(p.K / p.n)} / ${f1(p.D / p.n)} / ${f1(p.A / p.n)}</b><small>per game</small></div>
+          <div class="ptile"><div class="eyebrow">CS / min</div><b>${p.cs == null ? "—" : p.cs.toFixed(1)}</b><small>average${p.gold != null ? ` · ${Math.round(p.gold)} gold/min` : ""}</small></div>
+          <div class="ptile"><div class="eyebrow">Games</div><b>${p.n}</b><small><span class="res-w">${p.wins}W</span> – <span class="res-l">${p.n - p.wins}L</span> · ${winPct}% wins</small></div>
+        </div>
+        <h4 class="pdlg-h">Champions played</h4>
+        <div class="tablebox"><table class="data ptbl">
+          <thead><tr><th>Champion</th><th class="n">Games</th><th>Win rate</th><th class="n">KDA</th><th class="n">CS/min</th></tr></thead>
+          <tbody>${champRows.map(c => `<tr><td>${esc(c.c)}</td><td class="n">${c.n}</td><td class="wrc"><span class="wr-bar" aria-hidden="true"><span style="width:${wr(c)}%"></span></span>${wr(c)}% <span class="wl-sm">(${c.w}–${c.n - c.w})</span></td><td class="n">${c.kda}</td><td class="n">${c.cs == null ? "—" : c.cs.toFixed(1)}</td></tr>`).join("")}</tbody>
+        </table></div>
+        <h4 class="pdlg-h">Games</h4>
+        <div class="tablebox"><table class="data ptbl">
+          <thead><tr><th>Game</th><th>Champion</th><th>Result</th><th class="n">K / D / A</th><th class="n">CS/min</th></tr></thead>
+          <tbody>${p.games.map(x => `<tr><td>${esc(STAGE_LABEL[x.stage] || x.stage)} · G${x.game}${x.shot ? ` · <a href="${esc(x.shot)}" target="_blank" rel="noopener">screenshot</a>` : ""}</td><td>${esc(x.champ)}</td><td class="${x.win ? "res-w" : "res-l"}">${x.win ? "Win" : "Loss"}</td><td class="n">${x.k} / ${x.d} / ${x.a}</td><td class="n">${x.cs == null ? "—" : x.cs.toFixed(1)}</td></tr>`).join("")}</tbody>
+        </table></div>
+      </div>`;
+  }
+  const pdlg = $("playerDlg");
+  let pdlgFrom = null;
+  $("statsBox").addEventListener("click", e => {
+    const b = e.target.closest("[data-p]"); if (!b) return;
+    const p = statPlayers[+b.dataset.p]; if (!p) return;
+    pdlgFrom = b; pdlg.innerHTML = playerHtml(p); pdlg.showModal();
+  });
+  const closePlayer = () => { if (!pdlg.open) return; pdlg.close(); if (pdlgFrom) pdlgFrom.focus(); };
+  pdlg.addEventListener("click", e => { if (e.target === pdlg || e.target.closest("[data-close]")) closePlayer(); });
+  pdlg.addEventListener("cancel", e => { e.preventDefault(); closePlayer(); });
+  $("statsTabs").addEventListener("click", e => {
+    const b = e.target.closest("[data-k]"); if (!b) return;
+    statsKey = b.dataset.k; store.set("wtl-stats", statsKey); renderStats();
+  });
+
   // ---------- Tabs ----------
-  const TABS = ["rules", "slope", "calculator", "roster", "schedule"];
+  const TABS = ["rules", "slope", "calculator", "roster", "schedule", "stats"];
   const tabBtns = [...document.querySelectorAll('.tabbar [role="tab"]')];
   function showTab(id, focus) {
     TABS.forEach(t => { $(t).hidden = t !== id; });
@@ -1680,6 +1848,7 @@ button.rteam-head:hover .rteam-more { color: #fff; text-decoration-color: var(--
     store.set("wtl-tab", id);
     if (id === "roster") loadRoster();
     if (id === "schedule") renderSchedule();
+    if (id === "stats") renderStats();
   }
   // Resolve any in-page hash (tab id or an anchor inside a tab) to its tab, then scroll to the anchor
   function route(hash, smooth) {
