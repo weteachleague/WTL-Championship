@@ -129,6 +129,11 @@ table.data th.n { text-align: right; }
 .tb li { counter-increment: tb; display: grid; grid-template-columns: 2em minmax(0, 1fr); color: var(--soft); }
 .tb li::before { content: counter(tb) "."; font: 600 15px/1.6 var(--font-display); color: var(--magenta); }
 .tb b { color: #fff; }
+.tb-sub { grid-column: 2; margin: 6px 0 0; padding-left: 1.2em; display: grid; gap: 4px; }
+.tb-sub li { display: list-item; counter-increment: none; }
+.tb-sub li::before { content: none; }
+.tb li.tb-note { counter-increment: none; }
+.tb li.tb-note::before { content: ""; }
 @media (max-width: 560px) { .tb { margin-left: 0; } }
 
 /* Point tables */
@@ -699,6 +704,8 @@ button.rteam-head:hover .rteam-more { color: #fff; text-decoration-color: var(--
               <li><span><b>Head-to-head:</b> who won the series between the tied teams, if they played each other.</span></li>
               <li><span><b>Opponents’ total wins:</b> teams that faced tougher opponents rank higher.</span></li>
               <li><span><b>Top Lane Death Match:</b> Both top laners have to 1 v 1 in a skill matchup of their choice (both have to agree) on summoner’s rift. If an OTP wants his champion no matter what, he may declare it, but the other player gets counterpick choice. First one who gets a kill, first tower, or 100 CS wins the game. Win the 1 v 1 twice to win the tie breaker (Bo3).</span></li>
+              <li class="tb-note"><span>If there’s a 3 way tie after the first 4 tie breakers, there will be 1 v 1s between the top laners of all 3 teams with the following format (all Bo1s):</span>
+                <ul class="tb-sub"><li>Game 1: Player 1 vs Player 2</li><li>Game 2: Player 3 vs Loser of Game 1</li><li>Game 3: Winner of Game 1 vs Winner of game 2</li></ul></li>
             </ol>
           </div>
         </div>
