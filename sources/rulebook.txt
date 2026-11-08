@@ -12,10 +12,10 @@ I’d like to say a big thank you to the people over at LBLCS. The rule book bel
 [0.2.1]​ Emotes that can be muted in-game (e.g., emote wheel, mastery flash, situational emotes for first blood) are allowed to be used.  Dancing and laughing are also allowed.  If bothered by these emotes, players can mute them through their settings (dancing and laughing are muted by muting chat). 
 [0.2.2] ​All chat should only be used in a sportsmanlike manner and when warranted.  E.g., “ggwp,” “glhf”.  Mean-spirited all chat usage may result in game suspensions for the offending player(s).
 [0.2.3]. If any situations come up during game time (eligibility questions, rule violations, unsportsmanlike behavior in the lobby, etc.), do not play the game.  Captains should ping one of the officials on the discord server.
-[0.2.4]​ Whenever a new or reworked champion is released, they will not be available in league matches until one (1) patch after the champion is released.
+[0.2.4]​ Whenever a new or reworked champion is released, they will not be available in league matches until 1 patch after the champion is released.
 [0.2.5]​ In order to participate in an official match for a team, players must be in the discord server and be properly registered on that team. The onus is on the opposing captain to check that the players in their lobby are registered on the approved roster lists.
 [0.2.6] The matches will take place every Friday at 8pm EST for NA and 7pm CET for EU. The captains are free to schedule their matches at another time, but it must be approved by both captains. Teams must be willing to field substitute players if need be. 
-[0.2.7] ​Matches must be played five (5) vs. five (5). If the initial five (5) players for each team are not present at the scheduled match time, see the table below:
+[0.2.7] ​Matches must be played 5 vs. 5. If the initial 5 players for each team are not present at the scheduled match time, see the table below:
 Time Late to Match
 	Punishment
 	5 Minutes
@@ -257,7 +257,7 @@ SLOPE Evaluation
 [5.4.1] Side selection is chosen through a coin flip. Both captains shall go in the coin flip channel where one captain will flip a coin on this website or simply on google. The captain that won the coin flip can choose between Red or Blue side. All games after the first are the loser's choice: the team that lost the most recent game has side selection in the next game.
 [5.4.2] In semi-finals, side selection is chosen by coin flip as well (see [5.4.1]), but the 1st seed of the Swiss stage will have automatic side selection as well as opponent choice.
 [5.4.3] For finals, side selection is decided by a coin flip (see [5.4.1])
-[5.4.4] In the playoffs, the team with side selection of the first game must communicate their decision at least twenty four (24) hours prior to the start of the match with their roster. If this team does not decide on a side by this time, the side selection will be decided like in regular season with a coin flip.
+[5.4.4] In the playoffs, the team with side selection of the first game must communicate their decision at least 24 hours prior to the start of the match with their roster. If this team does not decide on a side by this time, the side selection will be decided like in regular season with a coin flip.
 5.5 Schedules
 [5.5.1] Every week, each team will have 1 match scheduled. 
 [5.5.2]These matches must be played within the week they are assigned (Between Monday and Sunday).
