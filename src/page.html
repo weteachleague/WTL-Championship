@@ -263,6 +263,21 @@ footer.foot .wrap { padding-block: 24px; display: flex; flex-wrap: wrap; gap: 8p
 .slot .tbd-mark { display: grid; place-items: center; border: 1px dashed var(--line); color: var(--muted); font: 600 16px/1 var(--font-display); }
 .slot .t { font: 600 17px/1.25 var(--font-display); letter-spacing: .02em; color: #fff; overflow-wrap: anywhere; }
 .slot.tbd .t { color: var(--muted); font-weight: 500; }
+.slot .sc { margin-left: auto; padding-left: 10px; font: 700 26px/1 var(--font-display); color: var(--muted); font-variant-numeric: tabular-nums; }
+.slot.win .sc { color: var(--ok); }
+.slot.win .t::after { content: "Winner"; display: inline-block; margin-left: 8px; padding: 3px 6px; border-radius: 3px; background: var(--ok-soft); color: var(--ok); font: 600 10px/1 var(--font-display); letter-spacing: .1em; text-transform: uppercase; vertical-align: 3px; }
+.slot.lose { opacity: .55; }
+.res-log { margin-top: 26px; }
+.res-log h3 { margin: 0 0 10px; font: 700 20px/1.1 var(--font-display); text-transform: uppercase; letter-spacing: .04em; }
+.res-log ol { list-style: none; margin: 0; padding: 0; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); }
+.res-log li { display: flex; flex-wrap: wrap; gap: 4px 12px; align-items: baseline; padding: 10px 14px; border-top: 1px solid var(--line); font-size: 15px; }
+.res-log li:first-child { border-top: 0; }
+.res-log .st { font: 600 12px/1 var(--font-display); letter-spacing: .1em; text-transform: uppercase; color: var(--magenta); min-width: 120px; }
+.res-log .w { color: #fff; font-weight: 600; }
+.res-log .l { color: var(--muted); }
+.res-log .when { margin-left: auto; font-size: 13px; color: var(--muted); }
+.res-log a { color: inherit; text-decoration: underline; text-decoration-color: var(--line); text-underline-offset: 3px; }
+.res-log a:hover { text-decoration-color: var(--magenta); }
 
 /* ---------- Roster ---------- */
 .seg-row { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
@@ -1568,30 +1583,79 @@ button.rteam-head:hover .rteam-more { color: #fff; text-decoration-color: var(--
   const SCHEDULE = {};
   let schedKey = store.get("wtl-sched");
   if (!LEAGUES[schedKey]) schedKey = "na1";
-  function schedSlot(name) {
+  // Game results come live from the "WTL Championship - Results" sheet, written by the Discord bot (/result).
+  const RESULTS_SHEET = { id: "1RV5pcTYnMHsYziRNztKgQEgWXNE9rqtsYt9XcXW0ZpM", sheet: "Results" };
+  const STAGE_KEY = { w1: ["w1", 0], w2: ["w2", null], w3: ["w3", null], semi: ["po", 0], final: ["po", 1] };
+  const STAGE_LABEL = { w1: "Week 1", w2: "Week 2", w3: "Week 3", semi: "Semi-finals", final: "Finals" };
+  let results = null, resultsAt = 0;
+  async function loadResults() {
+    if (results && Date.now() - resultsAt < 60000) return results;
+    try {
+      const r = await fetch(`https://docs.google.com/spreadsheets/d/${RESULTS_SHEET.id}/gviz/tq?tqx=out:csv&headers=0&sheet=${RESULTS_SHEET.sheet}`, { cache: "no-store" });
+      if (!r.ok) throw new Error(r.status);
+      results = parseCsv(await r.text()).slice(1)
+        .map(c => ({ when: c[0], div: (c[1] || "").trim(), stage: (c[2] || "").trim(), winner: (c[3] || "").trim(), loser: (c[4] || "").trim(), game: +c[5] || 0, link: (c[7] || "").trim(), status: (c[8] || "").trim().toLowerCase() }))
+        .filter(x => x.div && x.winner && x.loser && x.status !== "void");
+      resultsAt = Date.now();
+    } catch { results = results || []; }
+    return results;
+  }
+  const norm = t => (t || "").trim().toLowerCase();
+  // Score of a series between a and b in a stage: games won by each
+  function seriesScore(list, stage, a, b) {
+    let sa = 0, sb = 0;
+    list.forEach(x => {
+      if (x.stage !== stage) return;
+      const w = norm(x.winner), l = norm(x.loser);
+      if (w === norm(a) && l === norm(b)) sa++;
+      else if (w === norm(b) && l === norm(a)) sb++;
+    });
+    return [sa, sb];
+  }
+  function schedSlot(name, score, state) {
     if (!name) return `<div class="slot tbd"><span class="tbd-mark" aria-hidden="true">?</span><span class="t">TBD</span></div>`;
     const initials = name.split(/\s+/).filter(Boolean).slice(0, 2).map(w => w[0]).join("").toUpperCase();
-    return `<div class="slot"><img class="rteam-logo" src="assets/logos/${slugify(name)}.png" alt="" data-initials="${esc(initials)}"><span class="t">${esc(name)}</span></div>`;
+    return `<div class="slot${state ? " " + state : ""}"><img class="rteam-logo" src="assets/logos/${slugify(name)}.png" alt="" data-initials="${esc(initials)}"><span class="t">${esc(name)}</span>${score != null ? `<span class="sc" aria-label="${score} games won">${score}</span>` : ""}</div>`;
   }
-  function renderSchedule() {
+  async function renderSchedule() {
     $("schedTabs").innerHTML = Object.entries(LEAGUES).map(([k, L]) =>
       `<button type="button" class="seg" aria-pressed="${k === schedKey}" data-k="${k}">${esc(L.name)}</button>`).join("");
     const eu = schedKey.startsWith("eu");
-    $("schedMeta").textContent = `${LEAGUES[schedKey].name} · default match time Friday ${eu ? "7 pm CET" : "8 pm EST"}, or any day that week if both captains agree (rule 5.5).`;
-    const data = SCHEDULE[schedKey] || {};
+    $("schedMeta").textContent = `${LEAGUES[schedKey].name} · default match time Friday ${eu ? "7 pm CET" : "8 pm EST"}, or any day that week if both captains agree (rule 5.5). Results are reported in Discord and show here right away.`;
+    const key = schedKey, data = SCHEDULE[key] || {};
+    const all = (results || []).filter(x => x.div === key);
     const box = $("schedBox");
-    box.innerHTML = STAGES.map(st => {
-      const body = st.brackets.map((b, bi) => {
-        const names = ((data[st.id] || [])[bi]) || [];
-        let rows = "";
-        for (let i = 0; i < b.slots; i += 2) rows += `<div class="mt">${schedSlot(names[i])}<div class="vs">vs</div>${schedSlot(names[i + 1])}</div>`;
-        return `<div class="bkt"><h4>${esc(b.label)}</h4>${b.note ? `<p class="bnote">${esc(b.note)}</p>` : ""}${rows}</div>`;
-      }).join("");
-      return `<section class="wk" aria-label="${esc(st.title)}"><header><h3>${esc(st.title)}</h3><span>${esc(st.note)}</span></header><div class="wk-body">${body}</div></section>`;
-    }).join("");
-    box.querySelectorAll("img.rteam-logo").forEach(img => img.addEventListener("error", () => {
-      const d = document.createElement("div"); d.className = "rteam-mono"; d.setAttribute("aria-hidden", "true"); d.textContent = img.dataset.initials; img.replaceWith(d);
-    }, { once: true }));
+    const draw = list => {
+      if (key !== schedKey) return;
+      box.innerHTML = STAGES.map(st => {
+        const body = st.brackets.map((b, bi) => {
+          const names = ((data[st.id] || [])[bi]) || [];
+          const stage = st.id === "po" ? (bi === 0 ? "semi" : "final") : st.id;
+          const need = stage === "final" ? 3 : 2;
+          let rows = "";
+          for (let i = 0; i < b.slots; i += 2) {
+            const a = names[i], c = names[i + 1];
+            let sa = null, sc = null, stA = "", stC = "";
+            if (a && c) {
+              [sa, sc] = seriesScore(list, stage, a, c);
+              if (!sa && !sc) sa = sc = null;
+              else if (sa >= need) { stA = "win"; stC = "lose"; }
+              else if (sc >= need) { stC = "win"; stA = "lose"; }
+            }
+            rows += `<div class="mt">${schedSlot(a, sa, stA)}<div class="vs">vs</div>${schedSlot(c, sc, stC)}</div>`;
+          }
+          return `<div class="bkt"><h4>${esc(b.label)}</h4>${b.note ? `<p class="bnote">${esc(b.note)}</p>` : ""}${rows}</div>`;
+        }).join("");
+        return `<section class="wk" aria-label="${esc(st.title)}"><header><h3>${esc(st.title)}</h3><span>${esc(st.note)}</span></header><div class="wk-body">${body}</div></section>`;
+      }).join("") + (list.length ? `<div class="res-log" style="grid-column:1/-1"><h3>Reported games</h3><ol>${list.slice().reverse().map(x =>
+        `<li><span class="st">${esc(STAGE_LABEL[x.stage] || x.stage)} · G${x.game}</span><span><span class="w">${esc(x.winner)}</span> def. <span class="l">${esc(x.loser)}</span></span><span class="when">${esc(x.when)}${x.link ? ` · <a href="${esc(x.link)}" target="_blank" rel="noopener">screenshot</a>` : ""}</span></li>`).join("")}</ol></div>` : "");
+      box.querySelectorAll("img.rteam-logo").forEach(img => img.addEventListener("error", () => {
+        const d = document.createElement("div"); d.className = "rteam-mono"; d.setAttribute("aria-hidden", "true"); d.textContent = img.dataset.initials; img.replaceWith(d);
+      }, { once: true }));
+    };
+    draw(all);
+    const fresh = (await loadResults()).filter(x => x.div === key);
+    draw(fresh);
   }
   $("schedTabs").addEventListener("click", e => {
     const b = e.target.closest("[data-k]"); if (!b) return;
@@ -1607,6 +1671,7 @@ button.rteam-head:hover .rteam-more { color: #fff; text-decoration-color: var(--
     tabBtns.forEach(b => { const on = b.dataset.tab === id; b.setAttribute("aria-selected", on); b.tabIndex = on ? 0 : -1; if (on && focus) b.focus(); });
     store.set("wtl-tab", id);
     if (id === "roster") loadRoster();
+    if (id === "schedule") renderSchedule();
   }
   // Resolve any in-page hash (tab id or an anchor inside a tab) to its tab, then scroll to the anchor
   function route(hash, smooth) {
