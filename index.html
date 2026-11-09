@@ -1711,7 +1711,7 @@ button.rteam-head:hover .rteam-more { color: #fff; text-decoration-color: var(--
   //      SCHEDULE.na3 (7 teams) = { w1: [[6 names], ["Bye team"]], w2: [[4], [2], ["Bye team"]], w3: [[2], [4], ["Bye team"]], po: ... }
   // Number of accepted teams per division decides the Swiss layout: 8 = standard, 7 = one bye per week (6.1.5),
   // 6 = a cross match between record groups. Update when a division's team count changes.
-  const DIV_TEAMS = { na1: 8, na2: 8, na3: 7, eu1: 6 };
+  const DIV_TEAMS = { na1: 8, na2: 8, na3: 8, eu1: 6 };
   const PLAYOFFS = { id: "po", title: "Playoffs", note: "Top 4 seeds after Swiss", brackets: [
     { label: "Semi-finals", slots: 4, note: "The 1st seed picks its opponent and side (6.2). Best of 3." },
     { label: "Finals", slots: 2, note: "Best of 5, or best of 3 if both teams agree (6.3)." } ] };
@@ -1738,7 +1738,8 @@ button.rteam-head:hover .rteam-more { color: #fff; text-decoration-color: var(--
   const SCHEDULE = {
     na1: { w1: [["Air Force Gaming", "Int for Head Pats", "Pengu and the Intermediate Bots", "End of Review", "Wire Dolves", "Cowboy Kitties", "shadowz", "WTL Interviewees"]] },
     na2: { w1: [["Tuff Puffs", "Tinky Winky Fanclub", "WTL Students of the Game", "Loser's Queue", "NoTPs", "Hanhwa Life Support", "Project Jasper", "Couch Enthusiasts"]] },
-    na3: { w1: [["Tuff Puffs Rising", "SOO Esports", "Let It Ride", "Molotov1", "The Beginning of Immortality", "The Flying Embers"], ["Whiskey Warriors"]] },
+    // NA D3 became 8 teams on 2026-11-08: Last Minute Legends took Whiskey Warriors' week 1 bye
+    na3: { w1: [["Tuff Puffs Rising", "SOO Esports", "Let It Ride", "Molotov1", "The Beginning of Immortality", "The Flying Embers", "Whiskey Warriors", "Last Minute Legends"]] },
     eu1: { w1: [["PeyzPal", "Grey Screen Wincon", "Winners Queue v2", "Rooks", "Frozen Syndicate", "Gankruptcy"]] },
   };
   let schedKey = store.get("wtl-sched");
