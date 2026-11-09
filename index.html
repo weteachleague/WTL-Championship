@@ -425,6 +425,10 @@ button.rteam-head:hover .rteam-more { color: #fff; text-decoration-color: var(--
 .tdlg-head .rteam-logo, .tdlg-head .rteam-mono { width: 128px; height: 128px; }
 .tdlg-head .rteam-mono { font-size: 44px; }
 .tdlg-head h3 { font-size: 44px; line-height: 1.05; margin: 6px 0 0; overflow-wrap: anywhere; }
+.tdlg-cap { margin: 10px 0 0; font-size: 15px; color: var(--soft); overflow-wrap: anywhere; }
+.tdlg-cap span:first-child { font: 600 12px/1 var(--font-display); letter-spacing: .12em; text-transform: uppercase; color: var(--magenta); margin-right: 4px; }
+.tdlg-cap b { color: #fff; font-weight: 600; }
+.tdlg-cap .tdlg-cap-d { color: var(--muted); font-size: 13.5px; }
 .tdlg-x { position: sticky; top: 0; margin-left: auto; align-self: flex-start; background: none; border: 0; color: var(--muted); font-size: 28px; line-height: 1; cursor: pointer; padding: 2px 6px; border-radius: 3px; }
 .tdlg-x:hover { color: #fff; }
 .tdlg-x:focus-visible { outline: 2px solid var(--magenta); }
@@ -1558,8 +1562,11 @@ button.rteam-head:hover .rteam-more { color: #fff; text-decoration-color: var(--
       try {
         const sr = await fetch(`https://docs.google.com/spreadsheets/d/${src.id}/gviz/tq?tqx=out:csv&headers=0&sheet=Status`, { cache: "no-store" });
         if (sr.ok) {
-          const sm = new Map(parseCsv(await sr.text()).filter(([n, st]) => n && STATUS_RE.test((st || "").trim())).map(([n, st]) => [n.trim().replace(/\s*\(\d+\)\s*$/, "").toLowerCase(), st.trim()]));
-          teams.forEach(t => { const st = sm.get((t.name || "").trim().toLowerCase()); if (st) { t.status = st; t.st = statusKind(st); } });
+          // Status tab: Team | Status | Captain (Discord username, optional)
+          const srows = parseCsv(await sr.text()), key = n => n.trim().replace(/\s*\(\d+\)\s*$/, "").toLowerCase();
+          const sm = new Map(srows.filter(([n, st]) => n && STATUS_RE.test((st || "").trim())).map(([n, st]) => [key(n), st.trim()]));
+          const cm = new Map(srows.filter(([n, , c]) => n && (c || "").trim() && key(n) !== "team").map(([n, , c]) => [key(n), c.trim()]));
+          teams.forEach(t => { const k = (t.name || "").trim().toLowerCase(), st = sm.get(k); if (st) { t.status = st; t.st = statusKind(st); } t.captain = cm.get(k) || ""; });
         }
       } catch {}
       // SLOPE variables recorded at evaluation: the hidden "Eval" tab (Name, x, y, peak, z, a, champ, b, slope, date). Optional.
@@ -1631,7 +1638,7 @@ button.rteam-head:hover .rteam-more { color: #fff; text-decoration-color: var(--
     return `
       <header class="tdlg-head">
         ${t.name ? `<img class="rteam-logo" src="assets/logos/${slugify(t.name)}.png" alt="" data-initials="${esc(initials)}">` : `<div class="rteam-mono" aria-hidden="true">?</div>`}
-        <div><div class="eyebrow">${esc(L.name)}</div><h3 id="tdlgTitle">${esc(t.name || "Unnamed team")}</h3></div>
+        <div><div class="eyebrow">${esc(L.name)}</div><h3 id="tdlgTitle">${esc(t.name || "Unnamed team")}</h3>${t.captain ? `<p class="tdlg-cap"><span>Captain</span> <b>${esc(t.captain)}</b> <span class="tdlg-cap-d">on Discord</span></p>` : ""}</div>
         <button type="button" class="tdlg-x" data-close aria-label="Close">×</button>
       </header>
       <div class="tdlg-body">
