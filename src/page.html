@@ -279,6 +279,12 @@ footer.foot .wrap { padding-block: 24px; display: flex; flex-wrap: wrap; gap: 8p
 .slot.lose { opacity: .55; }
 .slot.byed .t::after { content: "Bye · Win"; display: inline-block; margin-left: 8px; padding: 3px 6px; border-radius: 3px; background: var(--sunk); color: var(--soft); font: 600 10px/1 var(--font-display); letter-spacing: .1em; text-transform: uppercase; vertical-align: 3px; }
 .mt.bye { border-style: dashed; }
+.mt .when { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 8px 12px; border-bottom: 1px solid var(--line); background: var(--sunk); font-size: 13.5px; color: var(--soft); }
+.mt .when time { font-variant-numeric: tabular-nums; }
+.mt .when .mv, .mt .when .df { margin-left: auto; padding: 2px 6px; border-radius: 3px; font: 600 10px/1.2 var(--font-display); letter-spacing: .1em; text-transform: uppercase; }
+.mt .when .mv { background: var(--gold-soft); color: var(--magenta); }
+.mt .when .df { color: var(--muted); }
+.mt .when.moved time { color: #fff; }
 .res-log { margin-top: 26px; }
 .res-log h3 { margin: 0 0 10px; font: 700 20px/1.1 var(--font-display); text-transform: uppercase; letter-spacing: .04em; }
 .res-log ol { list-style: none; margin: 0; padding: 0; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); }
@@ -1765,6 +1771,44 @@ button.rteam-head:hover .rteam-more { color: #fff; text-decoration-color: var(--
     });
     return [sa, sb];
   }
+  // Match times: default is the Friday of the week (rule 5.5.4), 8 pm Eastern for NA and 7 pm CET for EU.
+  // Captains can move it inside the week with the bot's /schedule (5.5.4.1); the latest row in the "Schedule" tab wins.
+  const WEEK_START = { w1: "2026-11-09", w2: "2026-11-16", w3: "2026-11-23", semi: "2026-11-30" };
+  const DIV_TZ = key => key.startsWith("eu") ? { tz: "Europe/Paris", hm: "19:00" } : { tz: "America/New_York", hm: "20:00" };
+  function zonedToUtc(date, time, tz) {
+    const [y, mo, d] = date.split("-").map(Number), [h, mi] = time.split(":").map(Number), guess = Date.UTC(y, mo - 1, d, h, mi);
+    const p = Object.fromEntries(new Intl.DateTimeFormat("en-US", { timeZone: tz, hourCycle: "h23", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" })
+      .formatToParts(new Date(guess)).map(x => [x.type, x.value]));
+    return new Date(guess - (Date.UTC(+p.year, +p.month - 1, +p.day, +p.hour, +p.minute) - guess));
+  }
+  function defaultTime(key, stage) {
+    const ws = WEEK_START[stage]; if (!ws) return null;
+    const [y, m, d] = ws.split("-").map(Number), fri = new Date(Date.UTC(y, m - 1, d + 4)).toISOString().slice(0, 10);
+    return zonedToUtc(fri, DIV_TZ(key).hm, DIV_TZ(key).tz);
+  }
+  let times = null, timesAt = 0;
+  async function loadTimes() {
+    if (times && Date.now() - timesAt < 60000) return times;
+    try {
+      const r = await fetch(`https://docs.google.com/spreadsheets/d/${RESULTS_SHEET.id}/gviz/tq?tqx=out:csv&headers=0&sheet=Schedule`, { cache: "no-store" });
+      if (!r.ok) throw new Error(r.status);
+      times = parseCsv(await r.text()).slice(1)
+        .map(c => ({ div: (c[1] || "").trim(), stage: (c[2] || "").trim(), a: (c[3] || "").trim(), b: (c[4] || "").trim(), when: new Date((c[5] || "").trim()), status: (c[8] || "").trim().toLowerCase() }))
+        .filter(x => x.div && x.a && x.b && !isNaN(x.when) && x.status !== "void");
+      timesAt = Date.now();
+    } catch { times = times || []; }
+    return times;
+  }
+  function matchTime(key, stage, a, b, list) {
+    let set = null;
+    if (a && b) (list || []).forEach(x => { if (x.div === key && x.stage === stage && [norm(x.a), norm(x.b)].sort().join("|") === [norm(a), norm(b)].sort().join("|")) set = x.when; });
+    const when = set || defaultTime(key, stage); if (!when) return "";
+    const tz = DIV_TZ(key).tz;
+    const f = (o, z) => new Intl.DateTimeFormat("en-US", { timeZone: z, ...o }).format(when).replace("GMT+1", "CET").replace("GMT+2", "CEST");
+    const main = `${f({ weekday: "short", month: "short", day: "numeric" }, tz)} · ${f({ hour: "numeric", minute: "2-digit", timeZoneName: "short" }, tz)}`;
+    const local = `Your time: ${f({ weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit", timeZoneName: "short" })}`;
+    return `<div class="when${set ? " moved" : ""}" title="${esc(local)}"><time datetime="${when.toISOString()}">${esc(main)}</time>${set ? `<span class="mv" title="Rescheduled with /schedule">Moved</span>` : a && b ? `<span class="df">Default</span>` : ""}</div>`;
+  }
   function schedSlot(name, score, state) {
     if (!name) return `<div class="slot tbd"><span class="tbd-mark" aria-hidden="true">?</span><span class="t">TBD</span></div>`;
     const initials = name.split(/\s+/).filter(Boolean).slice(0, 2).map(w => w[0]).join("").toUpperCase();
@@ -1775,10 +1819,11 @@ button.rteam-head:hover .rteam-more { color: #fff; text-decoration-color: var(--
       `<button type="button" class="seg" aria-pressed="${k === schedKey}" data-k="${k}">${esc(L.name)}</button>`).join("");
     const eu = schedKey.startsWith("eu");
     const n = DIV_TEAMS[schedKey] || 8, fmt = n === 7 ? " One team has a bye each week (rule 6.1.5)." : n === 6 ? " With 6 teams, week 2 has one cross match between the 1W – 0L and 0W – 1L groups." : "";
-    $("schedMeta").textContent = `${LEAGUES[schedKey].name} · ${n} teams · default match time Friday ${eu ? "7 pm CET" : "8 pm EST"}, or any day that week if both captains agree (rule 5.5).${fmt} Results are reported in Discord and show here right away.`;
+    $("schedMeta").textContent = `${LEAGUES[schedKey].name} · ${n} teams · default match time Friday ${eu ? "7 pm CET" : "8 pm EST"}, or any day that week if both captains agree (rule 5.5): captains set it with /schedule in Discord.${fmt} Times are shown in the division’s time zone; hover a time to see yours. Results are reported in Discord and show here right away.`;
     const key = schedKey, data = SCHEDULE[key] || {};
     const all = (results || []).filter(x => x.div === key);
     const box = $("schedBox");
+    let tlist = times || [];
     const draw = list => {
       if (key !== schedKey) return;
       box.innerHTML = stagesFor(key).map(st => {
@@ -1797,7 +1842,8 @@ button.rteam-head:hover .rteam-more { color: #fff; text-decoration-color: var(--
               else if (sa >= need) { stA = "win"; stC = "lose"; }
               else if (sc >= need) { stC = "win"; stA = "lose"; }
             }
-            rows += `<div class="mt">${schedSlot(a, sa, stA)}<div class="vs">vs</div>${schedSlot(c, sc, stC)}</div>`;
+            const whenHtml = stage === "final" ? `<div class="when"><span>Preset time (rule 5.5.5)</span></div>` : matchTime(key, stage, a, c, tlist);
+            rows += `<div class="mt">${whenHtml}${schedSlot(a, sa, stA)}<div class="vs">vs</div>${schedSlot(c, sc, stC)}</div>`;
           }
           return `<div class="bkt"><h4>${esc(b.label)}</h4>${b.note ? `<p class="bnote">${esc(b.note)}</p>` : ""}${rows}</div>`;
         }).join("");
@@ -1809,8 +1855,9 @@ button.rteam-head:hover .rteam-more { color: #fff; text-decoration-color: var(--
       }, { once: true }));
     };
     draw(all);
-    const fresh = (await loadResults()).filter(x => x.div === key);
-    draw(fresh);
+    const [fresh, tl] = await Promise.all([loadResults(), loadTimes()]);
+    tlist = tl;
+    draw(fresh.filter(x => x.div === key));
   }
   $("schedTabs").addEventListener("click", e => {
     const b = e.target.closest("[data-k]"); if (!b) return;
