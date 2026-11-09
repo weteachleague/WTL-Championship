@@ -293,6 +293,12 @@ footer.foot .wrap { padding-block: 24px; display: flex; flex-wrap: wrap; gap: 8p
 .mt .when .mv { background: var(--gold-soft); color: var(--magenta); }
 .mt .when .df { color: var(--muted); }
 .mt .when.moved time { color: #fff; }
+.mt .pens { border-top: 1px solid var(--line); background: var(--bad-soft); padding: 8px 12px 10px; }
+.mt .pens-h { font: 600 11px/1.2 var(--font-display); letter-spacing: .12em; text-transform: uppercase; color: var(--bad); margin-bottom: 6px; }
+.mt .pens ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+.mt .pens li { font-size: 13.5px; line-height: 1.4; color: var(--soft); }
+.mt .pens li b { color: #fff; font-weight: 600; margin-right: 4px; }
+.mt .pens .pg, .mt .pens .pr { margin-left: 6px; font-size: 12px; color: var(--muted); }
 .res-log { margin-top: 26px; }
 .res-log h3 { margin: 0 0 10px; font: 700 20px/1.1 var(--font-display); text-transform: uppercase; letter-spacing: .04em; }
 .res-log ol { list-style: none; margin: 0; padding: 0; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); }
@@ -1807,6 +1813,29 @@ button.rteam-head:hover .rteam-more { color: #fff; text-decoration-color: var(--
     } catch { times = times || []; }
     return times;
   }
+  // Penalties: "Penalties" tab of the Results sheet, filled by staff:
+  // Division (na1…) | Stage (w1, w2, w3, semi, final) | Team | Opponent | Game | Penalty | Rule | Added | Status (void hides it)
+  let pens = null, pensAt = 0;
+  async function loadPenalties() {
+    if (pens && Date.now() - pensAt < 60000) return pens;
+    try {
+      const r = await fetch(`https://docs.google.com/spreadsheets/d/${RESULTS_SHEET.id}/gviz/tq?tqx=out:csv&headers=0&sheet=Penalties`, { cache: "no-store" });
+      if (!r.ok) throw new Error(r.status);
+      pens = parseCsv(await r.text()).slice(1)
+        .map(c => ({ div: (c[0] || "").trim().toLowerCase(), stage: (c[1] || "").trim().toLowerCase(), team: (c[2] || "").trim(), opp: (c[3] || "").trim(),
+          game: (c[4] || "").trim(), text: (c[5] || "").trim(), rule: (c[6] || "").trim(), status: (c[8] || "").trim().toLowerCase() }))
+        .filter(x => x.div && x.stage && x.team && x.text && x.status !== "void");
+      pensAt = Date.now();
+    } catch { pens = pens || []; }
+    return pens;
+  }
+  function matchPenalties(key, stage, a, b, list) {
+    if (!a || !b) return "";
+    const mine = (list || []).filter(x => x.div === key && x.stage === stage && [norm(a), norm(b)].includes(norm(x.team))
+      && (!x.opp || norm(x.opp) === norm(norm(x.team) === norm(a) ? b : a)));
+    if (!mine.length) return "";
+    return `<div class="pens"><div class="pens-h">Penalties</div><ul>${mine.map(x => `<li><b>${esc(x.team)}</b> <span>${esc(x.text)}</span>${x.game ? `<span class="pg">${/^g/i.test(x.game) ? esc(x.game) : "Game " + esc(x.game)}</span>` : ""}${x.rule ? `<span class="pr">${/^\d/.test(x.rule) ? "Rule " + esc(x.rule) : esc(x.rule)}</span>` : ""}</li>`).join("")}</ul></div>`;
+  }
   function matchTime(key, stage, a, b, list) {
     let set = null;
     if (a && b) (list || []).forEach(x => { if (x.div === key && x.stage === stage && [norm(x.a), norm(x.b)].sort().join("|") === [norm(a), norm(b)].sort().join("|")) set = x.when; });
@@ -1831,7 +1860,7 @@ button.rteam-head:hover .rteam-more { color: #fff; text-decoration-color: var(--
     const key = schedKey, data = SCHEDULE[key] || {};
     const all = (results || []).filter(x => x.div === key);
     const box = $("schedBox");
-    let tlist = times || [];
+    let tlist = times || [], plist = pens || [];
     const draw = list => {
       if (key !== schedKey) return;
       box.innerHTML = stagesFor(key).map(st => {
@@ -1851,7 +1880,7 @@ button.rteam-head:hover .rteam-more { color: #fff; text-decoration-color: var(--
               else if (sc >= need) { stC = "win"; stA = "lose"; }
             }
             const whenHtml = stage === "final" ? `<div class="when"><span>Preset time (rule 5.5.5)</span></div>` : matchTime(key, stage, a, c, tlist);
-            rows += `<div class="mt">${whenHtml}${schedSlot(a, sa, stA)}<div class="vs">vs</div>${schedSlot(c, sc, stC)}</div>`;
+            rows += `<div class="mt">${whenHtml}${schedSlot(a, sa, stA)}<div class="vs">vs</div>${schedSlot(c, sc, stC)}${matchPenalties(key, stage, a, c, plist)}</div>`;
           }
           return `<div class="bkt"><h4>${esc(b.label)}</h4>${b.note ? `<p class="bnote">${esc(b.note)}</p>` : ""}${rows}</div>`;
         }).join("");
@@ -1863,8 +1892,8 @@ button.rteam-head:hover .rteam-more { color: #fff; text-decoration-color: var(--
       }, { once: true }));
     };
     draw(all);
-    const [fresh, tl] = await Promise.all([loadResults(), loadTimes()]);
-    tlist = tl;
+    const [fresh, tl, pl] = await Promise.all([loadResults(), loadTimes(), loadPenalties()]);
+    tlist = tl; plist = pl;
     draw(fresh.filter(x => x.div === key));
   }
   $("schedTabs").addEventListener("click", e => {
