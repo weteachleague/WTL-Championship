@@ -1609,8 +1609,11 @@ button.rteam-head:hover .rteam-more { color: #fff; text-decoration-color: var(--
   }
   // ---------- Team details dialog (zooms out of the clicked card) ----------
   const SUB_LABEL = { top: "Top", jungle: "Jungle", mid: "Mid", adc: "ADC", support: "Support" };
+  // Extra accounts added to a team's multi-search (lower-case team name -> [server, Name#Tag]).
+  // Last Minute Legends' ADC is shown with his EUNE main (organizer's request); his NA alt goes in the NA multi-search.
+  const EXTRA_MULTI = { "last minute legends": [["na", "twilight spark#pony"]] };
   // OP.GG multi-search for the starters, grouped by server (taken from each player's OP.GG link, else the division's region)
-  function multiSearchLinks(starters, leagueKey) {
+  function multiSearchLinks(starters, leagueKey, teamName) {
     const fallback = leagueKey.startsWith("eu") ? "euw" : "na";
     const groups = new Map();
     starters.forEach(p => {
@@ -1619,6 +1622,10 @@ button.rteam-head:hover .rteam-more { color: #fff; text-decoration-color: var(--
       const reg = (m ? m[1] : fallback).toLowerCase();
       if (!groups.has(reg)) groups.set(reg, []);
       groups.get(reg).push(p.raw.trim());
+    });
+    (EXTRA_MULTI[(teamName || "").trim().toLowerCase()] || []).forEach(([reg, name]) => {
+      if (!groups.has(reg)) groups.set(reg, []);
+      if (!groups.get(reg).some(n => n.toLowerCase() === name.toLowerCase())) groups.get(reg).push(name);
     });
     if (!groups.size) return "";
     const many = groups.size > 1;
@@ -1672,7 +1679,7 @@ button.rteam-head:hover .rteam-more { color: #fff; text-decoration-color: var(--
           </div>
           <span class="pill ${inRange && starters.length === 5 ? "ok" : "warn"}">${starters.length < 5 ? `${starters.length}/5 starters` : inRange ? "Within limit" : tpe > hi ? `${tpe - hi} over limit` : `${lo - tpe} under limit`}</span>
         </div>
-        ${multiSearchLinks(starters, L.key || rosterKey)}
+        ${multiSearchLinks(starters, L.key || rosterKey, t.name)}
         <div class="tablebox"><table class="data tdlg-table">
           <thead><tr><th>Role</th><th>Player</th><th class="slot">Slot</th><th class="n">SLOPE</th><th class="n">Pts</th></tr></thead>
           <tbody>${starters.map(p => row(p, "Starter")).join("")}${subs.map(p => row(p, p.subFor ? `${SUB_LABEL[p.subFor]} sub` : "Sub")).join("")}</tbody>
