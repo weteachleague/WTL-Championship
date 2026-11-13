@@ -293,6 +293,11 @@ footer.foot .wrap { padding-block: 24px; display: flex; flex-wrap: wrap; gap: 8p
 .mt .when .mv { background: var(--gold-soft); color: var(--magenta); }
 .mt .when .df { color: var(--muted); }
 .mt .when.moved time { color: #fff; }
+.mt .draft { display: flex; align-items: center; gap: 8px; border-top: 1px solid var(--line); padding: 8px 12px; font-size: 13.5px; }
+.mt .draft a { display: inline-flex; align-items: center; gap: 6px; color: var(--magenta); font-weight: 600; text-decoration: none; }
+.mt .draft a:hover { text-decoration: underline; }
+.mt .draft a:focus-visible { outline: 2px solid var(--magenta); outline-offset: 2px; border-radius: 2px; }
+.mt .draft svg { width: 14px; height: 14px; flex: none; }
 .mt .pens { border-top: 1px solid var(--line); background: var(--bad-soft); padding: 8px 12px 10px; }
 .mt .pens-h { font: 600 11px/1.2 var(--font-display); letter-spacing: .12em; text-transform: uppercase; color: var(--bad); margin-bottom: 6px; }
 .mt .pens ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
@@ -1768,7 +1773,7 @@ button.rteam-head:hover .rteam-more { color: #fff; text-decoration-color: var(--
       const r = await fetch(`https://docs.google.com/spreadsheets/d/${RESULTS_SHEET.id}/gviz/tq?tqx=out:csv&headers=0&sheet=${RESULTS_SHEET.sheet}`, { cache: "no-store" });
       if (!r.ok) throw new Error(r.status);
       results = parseCsv(await r.text()).slice(1)
-        .map(c => ({ when: c[0], div: (c[1] || "").trim(), stage: (c[2] || "").trim(), winner: (c[3] || "").trim(), loser: (c[4] || "").trim(), game: +c[5] || 0, link: (c[7] || "").trim(), status: (c[8] || "").trim().toLowerCase() }))
+        .map(c => ({ when: c[0], div: (c[1] || "").trim(), stage: (c[2] || "").trim(), winner: (c[3] || "").trim(), loser: (c[4] || "").trim(), game: +c[5] || 0, link: (c[7] || "").trim(), status: (c[8] || "").trim().toLowerCase(), draft: (c[10] || "").trim() }))
         .filter(x => x.div && x.winner && x.loser && x.status !== "void");
       resultsAt = Date.now();
     } catch { results = results || []; }
@@ -1837,6 +1842,14 @@ button.rteam-head:hover .rteam-more { color: #fff; text-decoration-color: var(--
     if (!mine.length) return "";
     return `<div class="pens"><div class="pens-h">Penalties</div><ul>${mine.map(x => `<li><b>${esc(x.team)}</b> <span>${esc(x.text)}</span>${x.game ? `<span class="pg">${/^g/i.test(x.game) ? esc(x.game) : "Game " + esc(x.game)}</span>` : ""}${x.rule ? `<span class="pr">${/^\d/.test(x.rule) ? "Rule " + esc(x.rule) : esc(x.rule)}</span>` : ""}</li>`).join("")}</ul></div>`;
   }
+  // Game 1's drafter.lol link (column K of the Results sheet, asked by /result for every game; only game 1 is shown here).
+  function matchDraft(list, stage, a, b) {
+    if (!a || !b) return "";
+    const g1 = (list || []).filter(x => x.stage === stage && x.game === 1 && [norm(x.winner), norm(x.loser)].sort().join("|") === [norm(a), norm(b)].sort().join("|")
+      && /^https:\/\/(www\.)?drafter\.lol\/./i.test(x.draft)).pop();
+    if (!g1) return "";
+    return `<div class="draft"><a href="${esc(g1.draft)}" target="_blank" rel="noopener"><svg viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M9 3h4v4M13 3 7.5 8.5M12 9.5V13H3V4h3.5"/></svg>Game 1 draft</a></div>`;
+  }
   function matchTime(key, stage, a, b, list) {
     let set = null;
     if (a && b) (list || []).forEach(x => { if (x.div === key && x.stage === stage && [norm(x.a), norm(x.b)].sort().join("|") === [norm(a), norm(b)].sort().join("|")) set = x.when; });
@@ -1881,7 +1894,7 @@ button.rteam-head:hover .rteam-more { color: #fff; text-decoration-color: var(--
               else if (sc >= need) { stC = "win"; stA = "lose"; }
             }
             const whenHtml = stage === "final" ? `<div class="when"><span>Preset time (rule 5.5.5)</span></div>` : matchTime(key, stage, a, c, tlist);
-            rows += `<div class="mt">${whenHtml}${schedSlot(a, sa, stA)}<div class="vs">vs</div>${schedSlot(c, sc, stC)}${matchPenalties(key, stage, a, c, plist)}</div>`;
+            rows += `<div class="mt">${whenHtml}${schedSlot(a, sa, stA)}<div class="vs">vs</div>${schedSlot(c, sc, stC)}${matchDraft(list, stage, a, c)}${matchPenalties(key, stage, a, c, plist)}</div>`;
           }
           return `<div class="bkt"><h4>${esc(b.label)}</h4>${b.note ? `<p class="bnote">${esc(b.note)}</p>` : ""}${rows}</div>`;
         }).join("");
