@@ -340,6 +340,16 @@ footer.foot .wrap { padding-block: 24px; display: flex; flex-wrap: wrap; gap: 8p
 .lb .team { display: block; font-size: 13.5px; color: var(--muted); }
 .lb td.kda { font: 700 18px/1 var(--font-display); color: #fff; }
 .lb .kda-line { color: var(--soft); }
+.lb th.sortable { padding: 0; }
+.lb th button, .lb th.kda-h button { font: inherit; letter-spacing: inherit; text-transform: inherit; color: inherit; background: none; border: 0; cursor: pointer; padding: 10px 12px; display: inline-flex; align-items: center; gap: 4px; }
+.lb th.kda-h { white-space: nowrap; }
+.lb th.kda-h button { padding: 10px 3px; }
+.lb th.kda-h .kda-hl { margin-right: 4px; }
+.lb th.kda-h i { font-style: normal; color: var(--muted); }
+.lb th button:hover { color: #fff; }
+.lb th.on button, .lb th.kda-h button.on { color: var(--magenta); }
+.lb th button:focus-visible { outline: 2px solid var(--magenta); outline-offset: -2px; border-radius: 2px; }
+.lb .sarr { font-size: 10px; }
 .lb .kda-line i { font-style: normal; color: var(--muted); padding: 0 2px; }
 .lb .wl .w { color: var(--ok); }
 .lb .wl .l { color: var(--bad); }
@@ -1922,6 +1932,21 @@ button.rteam-head:hover .rteam-more { color: #fff; text-decoration-color: var(--
   let statsKey = store.get("wtl-stats");
   if (!PLAYING[statsKey]) statsKey = "na1";
   let statRows = null, statsAt = 0, statPlayers = [];
+  // Leaderboard sort: click a stat header to rank by it (most to least); click it again for least to most.
+  let statSort = { key: "kda", dir: -1 }, drawStatsTable = () => {};
+  const SORT_VAL = {
+    n: p => p.n, wins: p => p.n ? p.wins : null, k: p => p.n ? p.K / p.n : null, d: p => p.n ? p.D / p.n : null,
+    a: p => p.n ? p.A / p.n : null, kda: p => p.n ? p.kda : null, cs: p => p.cs,
+  };
+  function sortStats(list) {
+    const f = SORT_VAL[statSort.key] || SORT_VAL.kda, dir = statSort.dir;
+    return list.slice().sort((p, q) => {
+      const a = f(p), b = f(q);
+      if (a == null || b == null) { if (a != null) return -1; if (b != null) return 1; } // no data: always last
+      else if (a !== b) return dir < 0 ? b - a : a - b;
+      return q.kda - p.kda || q.n - p.n || p.order - q.order || p.name.localeCompare(q.name);
+    });
+  }
   const numOr = v => { const n = parseFloat(String(v || "").replace(/,/g, "")); return Number.isFinite(n) ? n : null; };
   async function loadStats() {
     if (statRows && Date.now() - statsAt < 60000) return statRows;
@@ -1995,14 +2020,25 @@ button.rteam-head:hover .rteam-more { color: #fff; text-decoration-color: var(--
     $("statsTabs").innerHTML = Object.entries(PLAYING).map(([k, L]) =>
       `<button type="button" class="seg" aria-pressed="${k === statsKey}" data-k="${k}">${esc(L.name)}</button>`).join("");
     const key = statsKey;
+    let statAll = [], statHasGames = false;
     const draw = (rows, teams) => {
       if (key !== statsKey) return;
-      statPlayers = aggregate(rows, teams);
-      $("statsMeta").textContent = statPlayers.length ? `${LEAGUES[key].name} · ${statPlayers.length} players · ${rows.length ? "KDA = (kills + assists) ÷ deaths, all games combined." : "No games collected yet: everyone starts at 0."}` : LEAGUES[key].name;
+      statAll = aggregate(rows, teams); statHasGames = rows.length > 0;
+      drawStatsTable();
+    };
+    drawStatsTable = () => {
+      if (key !== statsKey) return;
+      statPlayers = sortStats(statAll);
+      const rows = { length: statHasGames ? 1 : 0 };
+      const th = (k, label, cls = "") => {
+        const on = statSort.key === k, arrow = on ? (statSort.dir < 0 ? "▼" : "▲") : "";
+        return `<th class="n sortable${on ? " on" : ""}${cls ? " " + cls : ""}" aria-sort="${on ? (statSort.dir < 0 ? "descending" : "ascending") : "none"}"><button type="button" data-sort="${k}" title="Sort by ${esc(label)}">${esc(label)}<span class="sarr" aria-hidden="true">${arrow}</span></button></th>`;
+      };
+      $("statsMeta").textContent = statPlayers.length ? `${LEAGUES[key].name} · ${statPlayers.length} players · ${rows.length ? "KDA = (kills + assists) ÷ deaths, all games combined. Click a stat at the top of the table to rank by it; click again to reverse." : "No games collected yet: everyone starts at 0."}` : LEAGUES[key].name;
       $("statsBox").innerHTML = !statPlayers.length
         ? `<div class="st-empty">No players yet for ${esc(LEAGUES[key].name)}. They appear here once teams are accepted.</div>`
         : `<div class="tablebox"><table class="data lb">
-            <thead><tr><th class="n">#</th><th>Player</th><th class="n">Games</th><th class="n hide-sm">W–L</th><th class="n hide-sm">Avg K / D / A</th><th class="n">KDA</th><th class="n">CS/min</th></tr></thead>
+            <thead><tr><th class="n">#</th><th>Player</th>${th("n", "Games")}${th("wins", "W–L", "hide-sm")}<th class="n hide-sm kda-h"><span class="kda-hl">Avg</span>${["k", "d", "a"].map(k => { const on = statSort.key === k; return `<button type="button" data-sort="${k}" class="${on ? "on" : ""}" aria-pressed="${on}" title="Sort by average ${{ k: "kills", d: "deaths", a: "assists" }[k]}">${k.toUpperCase()}${on ? `<span class="sarr" aria-hidden="true">${statSort.dir < 0 ? "▼" : "▲"}</span>` : ""}</button>`; }).join("<i>/</i>")}</th>${th("kda", "KDA")}${th("cs", "CS/min")}</tr></thead>
             <tbody>${statPlayers.map((p, i) => `<tr>
               <td class="n rk">${i + 1}</td>
               <td class="pl"><button type="button" class="pbtn" data-p="${i}" aria-haspopup="dialog">${esc(p.name)}</button>${p.team ? `<span class="team">${esc(p.team)}${p.role ? ` · ${esc(p.role)}` : ""}</span>` : ""}</td>
@@ -2055,6 +2091,14 @@ button.rteam-head:hover .rteam-more { color: #fff; text-decoration-color: var(--
   const pdlg = $("playerDlg");
   let pdlgFrom = null;
   $("statsBox").addEventListener("click", e => {
+    const s = e.target.closest("[data-sort]");
+    if (s) {
+      const k = s.dataset.sort;
+      statSort = statSort.key === k ? { key: k, dir: -statSort.dir } : { key: k, dir: -1 };
+      drawStatsTable();
+      const again = $("statsBox").querySelector(`[data-sort="${k}"]`); if (again) again.focus();
+      return;
+    }
     const b = e.target.closest("[data-p]"); if (!b) return;
     const p = statPlayers[+b.dataset.p]; if (!p) return;
     pdlgFrom = b; pdlg.innerHTML = playerHtml(p); pdlg.showModal();
