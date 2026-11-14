@@ -1989,7 +1989,8 @@ button.rteam-head:hover .rteam-more { color: #fff; text-decoration-color: var(--
     const pl = list.filter(p => p.n > 0);
     const pct = (vals, v) => { if (vals.length < 2) return 0.5; let lo = 0, eq = 0; vals.forEach(x => { if (x < v) lo++; else if (x === v) eq++; }); return (lo + (eq - 1) / 2) / (vals.length - 1); };
     const isSup = p => p.cs != null ? p.cs < 3 : /support/i.test(p.role || "") && !/top|jungle|mid|adc/i.test(p.role || "");
-    const V = { kda: p => p.kda, cs: p => isSup(p) ? null : p.cs, kp: p => p.kp, wr: p => p.wins / p.n };
+    // CS not reported counts as 0 for the rating (a missing scoreboard column must not be an advantage)
+    const V = { kda: p => p.kda, cs: p => isSup(p) ? null : p.games.reduce((t, x) => t + (x.cs ?? 0), 0) / p.n, kp: p => p.kp, wr: p => p.wins / p.n };
     const W = { kda: .25, cs: .30, kp: .20, wr: .15 }, WT = .10;
     const groups = { sup: pl.filter(isSup), core: pl.filter(p => !isSup(p)) };
     const C = Object.fromEntries(Object.entries(groups).map(([g, l]) => [g, Object.fromEntries(Object.entries(V).map(([k, f]) => [k, l.map(f).filter(v => v != null)]))]));
@@ -2120,7 +2121,7 @@ button.rteam-head:hover .rteam-more { color: #fff; text-decoration-color: var(--
         const on = statSort.key === k, arrow = on ? (statSort.dir < 0 ? "▼" : "▲") : "";
         return `<th class="n sortable${on ? " on" : ""}${cls ? " " + cls : ""}" aria-sort="${on ? (statSort.dir < 0 ? "descending" : "ascending") : "none"}"><button type="button" data-sort="${k}" title="Sort by ${esc(label)}">${esc(label)}<span class="sarr" aria-hidden="true">${arrow}</span></button></th>`;
       };
-      $("statsMeta").textContent = statPlayers.length ? `${LEAGUES[key].name}${statRole === "all" ? "" : ` · ${STAT_ROLES.find(([k]) => k === statRole)[1]}`} · ${statPlayers.length} players · ${rows.length ? "# = overall rank by player rating: KDA 25%, CS/min 30%, KP 20%, win rate 15% (compared within the division, supports with supports; supports aren't rated on CS) and 10% for how the player did compared with their teammates; few games pull it toward average. It follows the player when you sort by a stat; click # to sort by rank again. KDA = (kills + assists) ÷ deaths; KP% = (kills + assists) ÷ team kills." : "No games collected yet: everyone starts at 0."}` : LEAGUES[key].name;
+      $("statsMeta").textContent = statPlayers.length ? `${LEAGUES[key].name}${statRole === "all" ? "" : ` · ${STAT_ROLES.find(([k]) => k === statRole)[1]}`} · ${statPlayers.length} players · ${rows.length ? "# = overall rank by player rating: KDA 25%, CS/min 30%, KP 20%, win rate 15% (compared within the division, supports with supports; supports aren't rated on CS; CS not reported counts as 0) and 10% for how the player did compared with their teammates; few games pull it toward average. It follows the player when you sort by a stat; click # to sort by rank again. KDA = (kills + assists) ÷ deaths; KP% = (kills + assists) ÷ team kills." : "No games collected yet: everyone starts at 0."}` : LEAGUES[key].name;
       $("statsBox").innerHTML = !statPlayers.length
         ? `<div class="st-empty">${statAll.length ? `No ${esc(STAT_ROLES.find(([k]) => k === statRole)[1])} players in ${esc(LEAGUES[key].name)}.` : `No players yet for ${esc(LEAGUES[key].name)}. They appear here once teams are accepted.`}</div>`
         : `<div class="tablebox"><table class="data lb">
