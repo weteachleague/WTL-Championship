@@ -1980,19 +1980,26 @@ button.rteam-head:hover .rteam-more { color: #fff; text-decoration-color: var(--
     rank: p => p.rating, n: p => p.n, wins: p => p.n ? p.wins : null, k: p => p.n ? p.K / p.n : null, d: p => p.n ? p.D / p.n : null,
     a: p => p.n ? p.A / p.n : null, kda: p => p.n ? p.kda : null, kp: p => p.kp, cs: p => p.cs,
   };
-  // Player rating (0-100), per division, from the players who have played:
-  // KDA 30%, CS/min 35%, KP 25%, each as a percentile; supports are compared with supports and everyone else together
-  // (a support = under 3 CS/min, or with no CS recorded, a support on the roster) and aren't rated on CS (their other weights scale up).
-  // Last 10%: performance relative to teammates. The player's score from those three stats minus the average score of the teammates
-  // they played with (game by game), as a percentile: doing average on a struggling team beats doing well on a team that all did great.
+  // Player rating (0-100), per division, from the players who have played. Weights depend on the player's roster role
+  // (a sub listed for several roles uses the first; not on a roster: support if under 3 CS/min, else mid):
+  //   role     KDA   CS/min  KP    Team delta
+  //   Top      22.5  35      22.5  20      Jungle   35    22.5   35    7.5      Mid   30  30  30  10
+  //   ADC      22.5  35      22.5  20      Support  35    0      50    15
+  // KDA, CS/min and KP are percentiles; supports are compared with supports and everyone else together; CS not reported counts as 0.
+  // Team delta: the player's score from KDA, CS/min and KP minus the average score of the teammates they played with (game by game),
+  // as a percentile: doing average on a struggling team beats doing well on a team that all did great.
   // Few games pull the rating toward 50 (n / (n + 1)). The rank is the player's place by rating and follows them when sorting by a stat.
+  const RATE_W = { top: { kda: .225, cs: .35, kp: .225, team: .20 }, jungle: { kda: .35, cs: .225, kp: .35, team: .075 },
+    mid: { kda: .30, cs: .30, kp: .30, team: .10 }, adc: { kda: .225, cs: .35, kp: .225, team: .20 }, support: { kda: .35, cs: 0, kp: .50, team: .15 } };
+  const rateRole = p => { const m = String(p.role || "").toLowerCase().match(/\b(top|jungle|jgl|mid|adc|support|sup)\b/);
+    const r = m ? ({ jgl: "jungle", sup: "support" }[m[1]] || m[1]) : null; return r || (p.cs != null && p.cs < 3 ? "support" : "mid"); };
   function rateStats(list) {
     const pl = list.filter(p => p.n > 0);
     const pct = (vals, v) => { if (vals.length < 2) return 0.5; let lo = 0, eq = 0; vals.forEach(x => { if (x < v) lo++; else if (x === v) eq++; }); return (lo + (eq - 1) / 2) / (vals.length - 1); };
-    const isSup = p => p.cs != null ? p.cs < 3 : /support/i.test(p.role || "") && !/top|jungle|mid|adc/i.test(p.role || "");
+    const isSup = p => rateRole(p) === "support";
     // CS not reported counts as 0 for the rating (a missing scoreboard column must not be an advantage)
     const V = { kda: p => p.kda, cs: p => isSup(p) ? null : p.games.reduce((t, x) => t + (x.cs ?? 0), 0) / p.n, kp: p => p.kp };
-    const W = { kda: .30, cs: .35, kp: .25 }, WT = .10;
+    const W0 = { kda: 1, cs: 1, kp: 1 };
     // rank on one criterion within a list of values (1 = best, ties share the rank)
     const rankIn = (vals, v) => 1 + vals.filter(x => x > v).length;
     const groups = { sup: pl.filter(isSup), core: pl.filter(p => !isSup(p)) };
@@ -2000,9 +2007,10 @@ button.rteam-head:hover .rteam-more { color: #fff; text-decoration-color: var(--
     // performance score from the four stats (0-1) and the weight it carries for this player
     pl.forEach(p => {
       const g = isSup(p) ? "sup" : "core", Cg = C[g]; let sum = 0, wt = 0;
+      const W = RATE_W[rateRole(p)]; p._role = rateRole(p); p._w = W;
       p._ranks = {}; p._group = g === "sup" ? "supports" : "non-supports";
-      Object.keys(W).forEach(k => { const v = V[k](p); p._ranks[k] = v == null || !Cg[k].length ? null : [rankIn(Cg[k], v), Cg[k].length]; });
-      Object.entries(W).forEach(([k, w]) => { const v = V[k](p); if (v == null || !Cg[k].length) return; sum += w * pct(Cg[k], v); wt += w; });
+      Object.keys(W0).forEach(k => { const v = V[k](p); p._ranks[k] = v == null || !Cg[k].length ? null : [rankIn(Cg[k], v), Cg[k].length]; });
+      Object.keys(W0).forEach(k => { const w = W[k]; const v = V[k](p); if (!w || v == null || !Cg[k].length) return; sum += w * pct(Cg[k], v); wt += w; });
       p._perf = wt ? sum / wt : 0.5; p._wt = wt;
     });
     // relative to teammates, game by game
@@ -2016,7 +2024,7 @@ button.rteam-head:hover .rteam-more { color: #fff; text-decoration-color: var(--
     pl.forEach(p => {
       p._ranks.team = p._rel == null ? null : [rankIn(rels, p._rel), rels.length];
       let sum = p._perf * p._wt, wt = p._wt;
-      if (p._rel != null && rels.length) { sum += WT * pct(rels, p._rel); wt += WT; }
+      if (p._rel != null && rels.length && p._w.team) { sum += p._w.team * pct(rels, p._rel); wt += p._w.team; }
       const raw = wt ? (sum / wt) * 100 : 50;
       p.rating = 50 + (raw - 50) * p.n / (p.n + 1);
     });
@@ -2127,7 +2135,7 @@ button.rteam-head:hover .rteam-more { color: #fff; text-decoration-color: var(--
         const on = statSort.key === k, arrow = on ? (statSort.dir < 0 ? "▼" : "▲") : "";
         return `<th class="n sortable${on ? " on" : ""}${cls ? " " + cls : ""}" aria-sort="${on ? (statSort.dir < 0 ? "descending" : "ascending") : "none"}"><button type="button" data-sort="${k}" title="Sort by ${esc(label)}">${esc(label)}<span class="sarr" aria-hidden="true">${arrow}</span></button></th>`;
       };
-      $("statsMeta").textContent = statPlayers.length ? `${LEAGUES[key].name}${statRole === "all" ? "" : ` · ${STAT_ROLES.find(([k]) => k === statRole)[1]}`} · ${statPlayers.length} players · ${rows.length ? "# = overall rank by player rating: KDA 30%, CS/min 35%, KP 25% (compared within the division, supports with supports; supports aren't rated on CS; CS not reported counts as 0) and 10% for how the player did compared with their teammates; few games pull it toward average. It follows the player when you sort by a stat; click # to sort by rank again. KDA = (kills + assists) ÷ deaths; KP% = (kills + assists) ÷ team kills." : "No games collected yet: everyone starts at 0."}` : LEAGUES[key].name;
+      $("statsMeta").textContent = statPlayers.length ? `${LEAGUES[key].name}${statRole === "all" ? "" : ` · ${STAT_ROLES.find(([k]) => k === statRole)[1]}`} · ${statPlayers.length} players · ${rows.length ? "# = overall rank by player rating, from KDA, CS/min, KP and team delta (how the player did compared with their teammates), weighted by role: top and ADC 22.5/35/22.5/20, jungle 35/22.5/35/7.5, mid 30/30/30/10, support 35/0/50/15. Compared within the division, supports with supports; CS not reported counts as 0; few games pull the rating toward average. It follows the player when you sort by a stat; click # to sort by rank again. KDA = (kills + assists) ÷ deaths; KP% = (kills + assists) ÷ team kills." : "No games collected yet: everyone starts at 0."}` : LEAGUES[key].name;
       $("statsBox").innerHTML = !statPlayers.length
         ? `<div class="st-empty">${statAll.length ? `No ${esc(STAT_ROLES.find(([k]) => k === statRole)[1])} players in ${esc(LEAGUES[key].name)}.` : `No players yet for ${esc(LEAGUES[key].name)}. They appear here once teams are accepted.`}</div>`
         : `<div class="tablebox"><table class="data lb">
@@ -2173,12 +2181,13 @@ button.rteam-head:hover .rteam-more { color: #fff; text-decoration-color: var(--
         ${p.rating != null && p._ranks ? `<h4 class="pdlg-h">Rating breakdown</h4>
         <div class="tablebox"><table class="data ptbl">
           <thead><tr><th>Criterion</th><th class="n">Weight</th><th class="n">Rank</th><th>Compared with</th></tr></thead>
-          <tbody>${[["kda", "KDA", "30%"], ["cs", "CS/min", "35%"], ["kp", "Kill participation", "25%"], ["team", "Teammate adjustment", "10%"]].map(([k, label, w]) => {
-            const r = p._ranks[k], who = k === "team" ? "all players" : p._group;
-            return `<tr><td>${label}</td><td class="n">${w}</td><td class="n">${r ? `<b>${r[0]}</b> / ${r[1]}` : "—"}</td><td class="wl-sm">${r ? who : k === "cs" ? "not rated for supports (weight goes to the others)" : "no data"}</td></tr>`;
+          <tbody>${[["kda", "KDA"], ["cs", "CS/min"], ["kp", "Kill participation"], ["team", "Team delta"]].map(([k, label]) => {
+            const r = p._ranks[k], w = p._w[k], who = k === "team" ? "all players" : p._group;
+            const pc = `${+(w * 100).toFixed(1)}%`;
+            return `<tr><td>${label}</td><td class="n">${pc}</td><td class="n">${r ? `<b>${r[0]}</b> / ${r[1]}` : "—"}</td><td class="wl-sm">${!w ? `not rated for ${p._role === "support" ? "supports" : "this role"}` : r ? who : "no data"}</td></tr>`;
           }).join("")}</tbody>
         </table></div>
-        <p class="hint pdlg-note">Teammate adjustment: how much better the player did than the teammates they played with, game by game. Rank 1 = best in the division.</p>` : ""}
+        <p class="hint pdlg-note">Weights for a ${{ top: "top laner", jungle: "jungler", mid: "mid laner", adc: "ADC", support: "support" }[p._role]}. Team delta: how much better the player did than the teammates they played with, game by game. Rank 1 = best in the division.</p>` : ""}
         <h4 class="pdlg-h">Champions played</h4>
         <div class="tablebox"><table class="data ptbl">
           <thead><tr><th>Champion</th><th class="n">Games</th><th>Win rate</th><th class="n">KDA</th><th class="n">CS/min</th></tr></thead>
