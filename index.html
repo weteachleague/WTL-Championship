@@ -394,6 +394,9 @@ footer.foot .wrap { padding-block: 24px; display: flex; flex-wrap: wrap; gap: 8p
 
 /* ---------- Roster ---------- */
 .seg-row { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+.seg-row.roles { margin-top: -4px; }
+.seg-row.roles .seg { font-size: 13px; padding: 7px 11px; }
+.seg-row.roles .seg[aria-pressed="true"] { background: transparent; border-color: var(--magenta); color: var(--magenta); }
 #rosterMeta { margin-bottom: 18px; }
 #roster > .wrap { max-width: 1480px; }
 .roster-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; }
@@ -993,6 +996,7 @@ button.rteam-head:hover .rteam-more { color: #fff; text-decoration-color: var(--
       <p>Player leaderboard for each division, ranked by KDA ((kills + assists) ÷ deaths over all games played). Stats are read from the post-game screenshots of reported games and updated weekly. Click a player for their averages and champions.</p>
     </div>
     <div class="seg-row" id="statsTabs" aria-label="Division"></div>
+    <div class="seg-row roles" id="statsRoles" aria-label="Role"></div>
     <p class="hint st-meta" id="statsMeta" aria-live="polite"></p>
     <div id="statsBox"></div>
     <dialog id="playerDlg" class="tdlg" aria-labelledby="pdlgTitle"></dialog>
@@ -1959,6 +1963,15 @@ button.rteam-head:hover .rteam-more { color: #fff; text-decoration-color: var(--
   let statRows = null, statsAt = 0, statPlayers = [];
   // Leaderboard sort: click a stat header to rank by it (most to least); click it again for least to most.
   let statSort = { key: "kda", dir: -1 }, drawStatsTable = () => {};
+  // Role filter: a player's roster role, subs included in the role(s) they sub for (e.g. "Mid / ADC sub" shows under Mid and ADC).
+  const STAT_ROLES = [["all", "All roles"], ["top", "Top"], ["jungle", "Jungle"], ["mid", "Mid"], ["adc", "ADC"], ["support", "Support"]];
+  let statRole = store.get("wtl-stats-role");
+  if (!STAT_ROLES.some(([k]) => k === statRole)) statRole = "all";
+  const roleOf = p => String(p.role || "").toLowerCase().replace(/\bjgl\b/g, "jungle").replace(/\bsup\b/g, "support");
+  const roleMatch = p => statRole === "all" || new RegExp(`\\b${statRole}\\b`).test(roleOf(p));
+  function renderStatRoles() {
+    $("statsRoles").innerHTML = STAT_ROLES.map(([k, label]) => `<button type="button" class="seg" aria-pressed="${k === statRole}" data-role="${k}">${label}</button>`).join("");
+  }
   const SORT_VAL = {
     n: p => p.n, wins: p => p.n ? p.wins : null, k: p => p.n ? p.K / p.n : null, d: p => p.n ? p.D / p.n : null,
     a: p => p.n ? p.A / p.n : null, kda: p => p.n ? p.kda : null, cs: p => p.cs,
@@ -2053,15 +2066,16 @@ button.rteam-head:hover .rteam-more { color: #fff; text-decoration-color: var(--
     };
     drawStatsTable = () => {
       if (key !== statsKey) return;
-      statPlayers = sortStats(statAll);
+      statPlayers = sortStats(statAll).filter(roleMatch);
+      renderStatRoles();
       const rows = { length: statHasGames ? 1 : 0 };
       const th = (k, label, cls = "") => {
         const on = statSort.key === k, arrow = on ? (statSort.dir < 0 ? "▼" : "▲") : "";
         return `<th class="n sortable${on ? " on" : ""}${cls ? " " + cls : ""}" aria-sort="${on ? (statSort.dir < 0 ? "descending" : "ascending") : "none"}"><button type="button" data-sort="${k}" title="Sort by ${esc(label)}">${esc(label)}<span class="sarr" aria-hidden="true">${arrow}</span></button></th>`;
       };
-      $("statsMeta").textContent = statPlayers.length ? `${LEAGUES[key].name} · ${statPlayers.length} players · ${rows.length ? "KDA = (kills + assists) ÷ deaths, all games combined. Click a stat at the top of the table to rank by it; click again to reverse." : "No games collected yet: everyone starts at 0."}` : LEAGUES[key].name;
+      $("statsMeta").textContent = statPlayers.length ? `${LEAGUES[key].name}${statRole === "all" ? "" : ` · ${STAT_ROLES.find(([k]) => k === statRole)[1]}`} · ${statPlayers.length} players · ${rows.length ? "KDA = (kills + assists) ÷ deaths, all games combined. Click a stat at the top of the table to rank by it; click again to reverse." : "No games collected yet: everyone starts at 0."}` : LEAGUES[key].name;
       $("statsBox").innerHTML = !statPlayers.length
-        ? `<div class="st-empty">No players yet for ${esc(LEAGUES[key].name)}. They appear here once teams are accepted.</div>`
+        ? `<div class="st-empty">${statAll.length ? `No ${esc(STAT_ROLES.find(([k]) => k === statRole)[1])} players in ${esc(LEAGUES[key].name)}.` : `No players yet for ${esc(LEAGUES[key].name)}. They appear here once teams are accepted.`}</div>`
         : `<div class="tablebox"><table class="data lb">
             <thead><tr><th class="n">#</th><th>Player</th>${th("n", "Games")}${th("wins", "W–L", "hide-sm")}<th class="n hide-sm kda-h"><span class="kda-hl">Avg</span>${["k", "d", "a"].map(k => { const on = statSort.key === k; return `<button type="button" data-sort="${k}" class="${on ? "on" : ""}" aria-pressed="${on}" title="Sort by average ${{ k: "kills", d: "deaths", a: "assists" }[k]}">${k.toUpperCase()}${on ? `<span class="sarr" aria-hidden="true">${statSort.dir < 0 ? "▼" : "▲"}</span>` : ""}</button>`; }).join("<i>/</i>")}</th>${th("kda", "KDA")}${th("cs", "CS/min")}</tr></thead>
             <tbody>${statPlayers.map((p, i) => `<tr>
@@ -2131,6 +2145,10 @@ button.rteam-head:hover .rteam-more { color: #fff; text-decoration-color: var(--
   const closePlayer = () => { if (!pdlg.open) return; pdlg.close(); if (pdlgFrom) pdlgFrom.focus(); };
   pdlg.addEventListener("click", e => { if (e.target === pdlg || e.target.closest("[data-close]")) closePlayer(); });
   pdlg.addEventListener("cancel", e => { e.preventDefault(); closePlayer(); });
+  $("statsRoles").addEventListener("click", e => {
+    const b = e.target.closest("[data-role]"); if (!b) return;
+    statRole = b.dataset.role; store.set("wtl-stats-role", statRole); drawStatsTable();
+  });
   $("statsTabs").addEventListener("click", e => {
     const b = e.target.closest("[data-k]"); if (!b) return;
     statsKey = b.dataset.k; store.set("wtl-stats", statsKey); renderStats();
