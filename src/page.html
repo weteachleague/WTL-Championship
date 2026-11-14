@@ -2219,7 +2219,7 @@ button.rteam-head:hover .rteam-more { color: #fff; text-decoration-color: var(--
       if (key !== champKey) return;
       const list = sortChamps(champList), drafted = games.filter(g => g.drafted).length, pct = v => v == null ? "—" : `${Math.round(v * 100)}%`;
       $("champMeta").textContent = games.length
-        ? `${label} · ${champList.length} champions · ${games.length} game${games.length === 1 ? "" : "s"} with stats${drafted ? `, ${drafted} with draft data` : ", no drafts recorded yet (bans and B1 need the drafter.lol link)"}. Prioscore = picks + bans ÷ games where the champion was available (in fearless, the games of a series after it was picked don't count). B1 = first pick of the draft ÷ picks.`
+        ? `${label} · ${champList.length} champions · ${games.length} game${games.length === 1 ? "" : "s"}${drafted ? `, ${drafted === games.length ? "all" : drafted} with draft data` : ", no drafts recorded yet (bans and B1 need the drafter.lol link)"}. Prioscore = picks + bans ÷ games where the champion was available (in fearless, the games of a series after it was picked don't count). B1 = first pick of the draft ÷ picks.`
         : `${label} · no games collected yet.`;
       const th = (k, text, title, cls = "n") => {
         const on = champSort.key === k;
