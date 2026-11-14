@@ -366,6 +366,7 @@ footer.foot .wrap { padding-block: 24px; display: flex; flex-wrap: wrap; gap: 8p
 .ptile b { display: block; font: 700 30px/1 var(--font-display); color: #fff; font-variant-numeric: tabular-nums; }
 .ptile small { display: block; margin-top: 6px; font-size: 13px; color: var(--muted); }
 .pdlg-h { margin: 0; font: 700 18px/1.1 var(--font-display); text-transform: uppercase; letter-spacing: .04em; }
+.pdlg-note { margin: -4px 0 0; font-size: 13px; }
 .wr-bar { display: inline-block; width: 64px; height: 6px; border-radius: 3px; background: var(--bad-soft); vertical-align: middle; margin-right: 8px; overflow: hidden; }
 .wr-bar span { display: block; height: 100%; background: var(--ok); }
 .wl-sm { color: var(--muted); font-size: 13.5px; }
@@ -1972,9 +1973,9 @@ button.rteam-head:hover .rteam-more { color: #fff; text-decoration-color: var(--
     a: p => p.n ? p.A / p.n : null, kda: p => p.n ? p.kda : null, kp: p => p.kp, cs: p => p.cs,
   };
   // Player rating (0-100), per division, from the players who have played:
-  // KDA 25%, CS/min 30%, KP 20%, win rate 15%, each as a percentile; supports are compared with supports and everyone else together
+  // KDA 30%, CS/min 35%, KP 25%, each as a percentile; supports are compared with supports and everyone else together
   // (a support = under 3 CS/min, or with no CS recorded, a support on the roster) and aren't rated on CS (their other weights scale up).
-  // Last 10%: performance relative to teammates. The player's score from those four stats minus the average score of the teammates
+  // Last 10%: performance relative to teammates. The player's score from those three stats minus the average score of the teammates
   // they played with (game by game), as a percentile: doing average on a struggling team beats doing well on a team that all did great.
   // Few games pull the rating toward 50 (n / (n + 1)). The rank is the player's place by rating and follows them when sorting by a stat.
   function rateStats(list) {
@@ -1982,13 +1983,17 @@ button.rteam-head:hover .rteam-more { color: #fff; text-decoration-color: var(--
     const pct = (vals, v) => { if (vals.length < 2) return 0.5; let lo = 0, eq = 0; vals.forEach(x => { if (x < v) lo++; else if (x === v) eq++; }); return (lo + (eq - 1) / 2) / (vals.length - 1); };
     const isSup = p => p.cs != null ? p.cs < 3 : /support/i.test(p.role || "") && !/top|jungle|mid|adc/i.test(p.role || "");
     // CS not reported counts as 0 for the rating (a missing scoreboard column must not be an advantage)
-    const V = { kda: p => p.kda, cs: p => isSup(p) ? null : p.games.reduce((t, x) => t + (x.cs ?? 0), 0) / p.n, kp: p => p.kp, wr: p => p.wins / p.n };
-    const W = { kda: .25, cs: .30, kp: .20, wr: .15 }, WT = .10;
+    const V = { kda: p => p.kda, cs: p => isSup(p) ? null : p.games.reduce((t, x) => t + (x.cs ?? 0), 0) / p.n, kp: p => p.kp };
+    const W = { kda: .30, cs: .35, kp: .25 }, WT = .10;
+    // rank on one criterion within a list of values (1 = best, ties share the rank)
+    const rankIn = (vals, v) => 1 + vals.filter(x => x > v).length;
     const groups = { sup: pl.filter(isSup), core: pl.filter(p => !isSup(p)) };
     const C = Object.fromEntries(Object.entries(groups).map(([g, l]) => [g, Object.fromEntries(Object.entries(V).map(([k, f]) => [k, l.map(f).filter(v => v != null)]))]));
     // performance score from the four stats (0-1) and the weight it carries for this player
     pl.forEach(p => {
-      const Cg = C[isSup(p) ? "sup" : "core"]; let sum = 0, wt = 0;
+      const g = isSup(p) ? "sup" : "core", Cg = C[g]; let sum = 0, wt = 0;
+      p._ranks = {}; p._group = g === "sup" ? "supports" : "non-supports";
+      Object.keys(W).forEach(k => { const v = V[k](p); p._ranks[k] = v == null || !Cg[k].length ? null : [rankIn(Cg[k], v), Cg[k].length]; });
       Object.entries(W).forEach(([k, w]) => { const v = V[k](p); if (v == null || !Cg[k].length) return; sum += w * pct(Cg[k], v); wt += w; });
       p._perf = wt ? sum / wt : 0.5; p._wt = wt;
     });
@@ -2001,6 +2006,7 @@ button.rteam-head:hover .rteam-more { color: #fff; text-decoration-color: var(--
     });
     const rels = pl.map(p => p._rel).filter(v => v != null);
     pl.forEach(p => {
+      p._ranks.team = p._rel == null ? null : [rankIn(rels, p._rel), rels.length];
       let sum = p._perf * p._wt, wt = p._wt;
       if (p._rel != null && rels.length) { sum += WT * pct(rels, p._rel); wt += WT; }
       const raw = wt ? (sum / wt) * 100 : 50;
@@ -2113,7 +2119,7 @@ button.rteam-head:hover .rteam-more { color: #fff; text-decoration-color: var(--
         const on = statSort.key === k, arrow = on ? (statSort.dir < 0 ? "▼" : "▲") : "";
         return `<th class="n sortable${on ? " on" : ""}${cls ? " " + cls : ""}" aria-sort="${on ? (statSort.dir < 0 ? "descending" : "ascending") : "none"}"><button type="button" data-sort="${k}" title="Sort by ${esc(label)}">${esc(label)}<span class="sarr" aria-hidden="true">${arrow}</span></button></th>`;
       };
-      $("statsMeta").textContent = statPlayers.length ? `${LEAGUES[key].name}${statRole === "all" ? "" : ` · ${STAT_ROLES.find(([k]) => k === statRole)[1]}`} · ${statPlayers.length} players · ${rows.length ? "# = overall rank by player rating: KDA 25%, CS/min 30%, KP 20%, win rate 15% (compared within the division, supports with supports; supports aren't rated on CS; CS not reported counts as 0) and 10% for how the player did compared with their teammates; few games pull it toward average. It follows the player when you sort by a stat; click # to sort by rank again. KDA = (kills + assists) ÷ deaths; KP% = (kills + assists) ÷ team kills." : "No games collected yet: everyone starts at 0."}` : LEAGUES[key].name;
+      $("statsMeta").textContent = statPlayers.length ? `${LEAGUES[key].name}${statRole === "all" ? "" : ` · ${STAT_ROLES.find(([k]) => k === statRole)[1]}`} · ${statPlayers.length} players · ${rows.length ? "# = overall rank by player rating: KDA 30%, CS/min 35%, KP 25% (compared within the division, supports with supports; supports aren't rated on CS; CS not reported counts as 0) and 10% for how the player did compared with their teammates; few games pull it toward average. It follows the player when you sort by a stat; click # to sort by rank again. KDA = (kills + assists) ÷ deaths; KP% = (kills + assists) ÷ team kills." : "No games collected yet: everyone starts at 0."}` : LEAGUES[key].name;
       $("statsBox").innerHTML = !statPlayers.length
         ? `<div class="st-empty">${statAll.length ? `No ${esc(STAT_ROLES.find(([k]) => k === statRole)[1])} players in ${esc(LEAGUES[key].name)}.` : `No players yet for ${esc(LEAGUES[key].name)}. They appear here once teams are accepted.`}</div>`
         : `<div class="tablebox"><table class="data lb">
@@ -2156,6 +2162,15 @@ button.rteam-head:hover .rteam-more { color: #fff; text-decoration-color: var(--
           <div class="ptile"><div class="eyebrow">CS / min</div><b>${csTxt(p)}</b><small>average${p.gold != null ? ` · ${Math.round(p.gold)} gold/min` : ""}</small></div>
           <div class="ptile"><div class="eyebrow">Games</div><b>${p.n}</b><small><span class="res-w">${p.wins}W</span> – <span class="res-l">${p.n - p.wins}L</span> · ${winPct}% wins</small></div>
         </div>
+        ${p.rating != null && p._ranks ? `<h4 class="pdlg-h">Rating breakdown</h4>
+        <div class="tablebox"><table class="data ptbl">
+          <thead><tr><th>Criterion</th><th class="n">Weight</th><th class="n">Rank</th><th>Compared with</th></tr></thead>
+          <tbody>${[["kda", "KDA", "30%"], ["cs", "CS/min", "35%"], ["kp", "Kill participation", "25%"], ["team", "Teammate adjustment", "10%"]].map(([k, label, w]) => {
+            const r = p._ranks[k], who = k === "team" ? "all players" : p._group;
+            return `<tr><td>${label}</td><td class="n">${w}</td><td class="n">${r ? `<b>${r[0]}</b> / ${r[1]}` : "—"}</td><td class="wl-sm">${r ? who : k === "cs" ? "not rated for supports (weight goes to the others)" : "no data"}</td></tr>`;
+          }).join("")}</tbody>
+        </table></div>
+        <p class="hint pdlg-note">Teammate adjustment: how much better the player did than the teammates they played with, game by game. Rank 1 = best in the division.</p>` : ""}
         <h4 class="pdlg-h">Champions played</h4>
         <div class="tablebox"><table class="data ptbl">
           <thead><tr><th>Champion</th><th class="n">Games</th><th>Win rate</th><th class="n">KDA</th><th class="n">CS/min</th></tr></thead>
