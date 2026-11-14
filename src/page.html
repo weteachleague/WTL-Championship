@@ -1753,8 +1753,10 @@ button.rteam-head:hover .rteam-more { color: #fff; text-decoration-color: var(--
   const stagesFor = key => [...(LAYOUTS[DIV_TEAMS[key]] || LAYOUTS[8]), PLAYOFFS];
   // Week 1 random draw, published 2026-11-08.
   const SCHEDULE = {
-    na1: { w1: [["Air Force Gaming", "Int for Head Pats", "Pengu and the Intermediate Bots", "End of Review", "Wire Dolves", "Cowboy Kitties", "shadowz", "WTL Interviewees"]] },
-    na2: { w1: [["Tuff Puffs", "Tinky Winky Fanclub", "WTL Students of the Game", "Loser's Queue", "NoTPs", "Hanhwa Life Support", "Project Jasper", "Couch Enthusiasts"]] },
+    // na1 week 2 drawn 2026-11-13 (random within record groups)
+    na1: { w1: [["Air Force Gaming", "Int for Head Pats", "Pengu and the Intermediate Bots", "End of Review", "Wire Dolves", "Cowboy Kitties", "shadowz", "WTL Interviewees"]], w2: [["End of Review", "Cowboy Kitties", "WTL Interviewees", "Air Force Gaming"], ["Wire Dolves", "Pengu and the Intermediate Bots", "Int for Head Pats", "shadowz"]] },
+    // na2 week 2 drawn 2026-11-13 (random within record groups)
+    na2: { w1: [["Tuff Puffs", "Tinky Winky Fanclub", "WTL Students of the Game", "Loser's Queue", "NoTPs", "Hanhwa Life Support", "Project Jasper", "Couch Enthusiasts"]], w2: [["Project Jasper", "Loser's Queue", "NoTPs", "Tuff Puffs"], ["Hanhwa Life Support", "WTL Students of the Game", "Couch Enthusiasts", "Tinky Winky Fanclub"]] },
     // NA D3 became 8 teams on 2026-11-08: Last Minute Legends took Whiskey Warriors' week 1 bye
     na3: { w1: [["Tuff Puffs Rising", "SOO Esports", "Let It Ride", "Molotov1", "The Beginning of Immortality", "The Flying Embers", "Whiskey Warriors", "Last Minute Legends"]] },
     eu1: { w1: [["PeyzPal", "Grey Screen Wincon", "Winners Queue v2", "Rooks", "Frozen Syndicate", "Gankruptcy"]] },
