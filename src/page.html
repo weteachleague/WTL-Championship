@@ -350,6 +350,10 @@ footer.foot .wrap { padding-block: 24px; display: flex; flex-wrap: wrap; gap: 8p
 .lb th.on button, .lb th.kda-h button.on { color: var(--magenta); }
 .lb th button:focus-visible { outline: 2px solid var(--magenta); outline-offset: -2px; border-radius: 2px; }
 .lb .sarr { font-size: 10px; }
+.lb.ch td.chn { display: flex; align-items: center; gap: 10px; font: 600 16px/1.2 var(--font-display); letter-spacing: .02em; color: #fff; min-width: 170px; white-space: nowrap; }
+.ch-ic { position: relative; width: 32px; height: 32px; flex: none; border-radius: 50%; overflow: hidden; background: var(--sunk); border: 1px solid var(--line); }
+.ch-ic::before { content: attr(data-i); position: absolute; inset: 0; display: grid; place-items: center; font: 600 12px/1 var(--font-display); color: var(--muted); text-transform: uppercase; }
+.ch-ic img { position: relative; width: 100%; height: 100%; object-fit: cover; display: block; }
 .lb .kda-line i { font-style: normal; color: var(--muted); padding: 0 2px; }
 .lb .wl .w { color: var(--ok); }
 .lb .wl .l { color: var(--bad); }
@@ -516,6 +520,7 @@ button.rteam-head:hover .rteam-more { color: #fff; text-decoration-color: var(--
     <button type="button" role="tab" id="tab-standings" aria-controls="standings" aria-selected="false" tabindex="-1" data-tab="standings"><span class="k">E</span>Standings</button>
     <button type="button" role="tab" id="tab-schedule" aria-controls="schedule" aria-selected="false" tabindex="-1" data-tab="schedule"><span class="k">F</span>Schedule</button>
     <button type="button" role="tab" id="tab-stats" aria-controls="stats" aria-selected="false" tabindex="-1" data-tab="stats"><span class="k">G</span>Stats</button>
+    <button type="button" role="tab" id="tab-champions" aria-controls="champions" aria-selected="false" tabindex="-1" data-tab="champions"><span class="k">H</span>Champions</button>
   </div>
 </nav>
 
@@ -983,6 +988,18 @@ button.rteam-head:hover .rteam-more { color: #fff; text-decoration-color: var(--
     <p class="hint st-meta" id="statsMeta" aria-live="polite"></p>
     <div id="statsBox"></div>
     <dialog id="playerDlg" class="tdlg" aria-labelledby="pdlgTitle"></dialog>
+  </div>
+</section>
+<section class="band" id="champions" role="tabpanel" aria-labelledby="tab-champions" tabindex="-1" hidden>
+  <div class="wrap">
+    <div class="band-head">
+      <div class="eyebrow">Section H</div>
+      <h2>Champions</h2>
+      <p>Picks, bans, priority and results for every champion played, per division or across all divisions. Picks and results come from the post-game screenshots; bans and first picks come from the drafter.lol drafts. Click a stat at the top of the table to rank by it.</p>
+    </div>
+    <div class="seg-row" id="champTabs" aria-label="Division"></div>
+    <p class="hint st-meta" id="champMeta" aria-live="polite"></p>
+    <div id="champBox"></div>
   </div>
 </section>
 </main>
@@ -1959,7 +1976,7 @@ button.rteam-head:hover .rteam-more { color: #fff; text-decoration-color: var(--
           win: /^(w|win|victory)/i.test((c[4] || "").trim()), result: (c[4] || "").trim(),
           ign: (c[5] || "").trim(), name: (c[6] || "").trim() || (c[5] || "").trim(),
           champ: !champ || champ.includes("?") ? "Unknown" : champ,
-          k: numOr(c[8]), d: numOr(c[9]), a: numOr(c[10]), cs: numOr(c[11]), gold: numOr(c[12]), shot: (c[13] || "").trim() };
+          k: numOr(c[8]), d: numOr(c[9]), a: numOr(c[10]), cs: numOr(c[11]), gold: numOr(c[12]), shot: (c[13] || "").trim(), msg: (c[14] || "").trim() };
       }).filter(x => x.div && x.name && x.k != null && x.d != null && x.a != null);
       statsAt = Date.now();
     } catch { statRows = statRows || []; }
@@ -2111,6 +2128,136 @@ button.rteam-head:hover .rteam-more { color: #fff; text-decoration-color: var(--
     statsKey = b.dataset.k; store.set("wtl-stats", statsKey); renderStats();
   });
 
+  // ---------- Champions (picks and results from the Stats tab, bans and first picks from the Drafts tab) ----------
+  // Drafts tab of the Results sheet, one row per game:
+  // Division | Stage | Game | First-pick team | Other team | First-pick team picks (in draft order) | Other team picks | First-pick team bans | Other team bans | Drafter link | Notes
+  // Champion lists are comma-separated. A game is matched to its reported result by division, stage, the two teams and the game number.
+  let champKey = store.get("wtl-champ");
+  if (champKey !== "all" && !PLAYING[champKey]) champKey = "all";
+  let champSort = { key: "prio", dir: -1 }, champList = [], drafts = null, draftsAt = 0;
+  const ckey = n => String(n || "").toLowerCase().replace(/[^a-z]/g, "");
+  const splitChamps = s => String(s || "").split(/[,;\n\/]/).map(x => x.trim()).filter(x => x && !x.includes("?"));
+  async function loadDrafts() {
+    if (drafts && Date.now() - draftsAt < 60000) return drafts;
+    try {
+      const r = await fetch(`https://docs.google.com/spreadsheets/d/${RESULTS_SHEET.id}/gviz/tq?tqx=out:csv&headers=0&sheet=Drafts`, { cache: "no-store" });
+      if (!r.ok) throw new Error(r.status);
+      const t = await r.text();
+      drafts = /^\s*<|google\.visualization/i.test(t) ? [] : parseCsv(t).slice(1).map(c => ({ div: (c[0] || "").trim(), stage: (c[1] || "").trim(), game: +c[2] || 0,
+        t1: (c[3] || "").trim(), t2: (c[4] || "").trim(), p1: splitChamps(c[5]), p2: splitChamps(c[6]), b1: splitChamps(c[7]), b2: splitChamps(c[8]), link: (c[9] || "").trim() }))
+        .filter(d => d.div && d.t1 && d.t2 && d.game);
+      draftsAt = Date.now();
+    } catch { drafts = drafts || []; }
+    return drafts;
+  }
+  // Data Dragon champion ids for the square icons (names that don't map by just removing spaces and punctuation)
+  const DD_ID = { wukong: "MonkeyKing", kaisa: "Kaisa", chogath: "Chogath", khazix: "Khazix", velkoz: "Velkoz", leblanc: "Leblanc", belveth: "Belveth",
+    kogmaw: "KogMaw", reksai: "RekSai", ksante: "KSante", nunuwillump: "Nunu", renataglasc: "Renata", drmundo: "DrMundo", fiddlesticks: "Fiddlesticks" };
+  let ddVer = null;
+  async function ddVersion() {
+    if (ddVer !== null) return ddVer;
+    try { ddVer = (await (await fetch("https://ddragon.leagueoflegends.com/api/versions.json")).json())[0] || ""; } catch { ddVer = ""; }
+    return ddVer;
+  }
+  const ddId = name => DD_ID[ckey(name)] || String(name).replace(/[^A-Za-z]/g, "");
+  function champGames(key, results, stats, drafts) {
+    const inScope = d => key === "all" ? !!PLAYING[d] : d === key;
+    const pair = (a, b) => [norm(a), norm(b)].sort().join("|");
+    const gid = (div, stage, a, b, g) => `${div}|${stage}|${pair(a, b)}|${g}`;
+    const games = new Map(), byMsg = new Map();
+    results.filter(x => inScope(x.div)).forEach(x => {
+      const g = { div: x.div, stage: x.stage, n: x.game, series: `${x.div}|${x.stage}|${pair(x.winner, x.loser)}`, winner: norm(x.winner), picks: new Map(), bans: [], first: null, drafted: false };
+      games.set(gid(x.div, x.stage, x.winner, x.loser, x.game), g);
+      if (x.link) byMsg.set(x.link, g);
+    });
+    stats.filter(x => inScope(x.div) && x.champ !== "Unknown").forEach(x => {
+      const g = byMsg.get(x.msg); if (!g) return;
+      const k = ckey(x.champ); if (!g.picks.has(k)) g.picks.set(k, { name: x.champ, win: x.win });
+    });
+    drafts.filter(d => inScope(d.div)).forEach(d => {
+      const g = games.get(gid(d.div, d.stage, d.t1, d.t2, d.game)); if (!g) return;
+      [[d.p1, d.t1], [d.p2, d.t2]].forEach(([list, team]) => list.forEach(c => { const k = ckey(c); if (!g.picks.has(k)) g.picks.set(k, { name: c, win: norm(team) === g.winner }); }));
+      g.bans = [...d.b1, ...d.b2]; g.first = d.p1[0] ? ckey(d.p1[0]) : null; g.drafted = true;
+    });
+    return [...games.values()].filter(g => g.picks.size || g.drafted);
+  }
+  function champTable(games) {
+    const C = new Map();
+    const get = (k, name) => { if (!C.has(k)) C.set(k, { k, name, pick: 0, ban: 0, b1: 0, dPicks: 0, w: 0, l: 0 }); return C.get(k); };
+    games.forEach(g => {
+      g.picks.forEach((p, k) => { const c = get(k, p.name); c.pick++; p.win ? c.w++ : c.l++; if (g.drafted) { c.dPicks++; if (g.first === k) c.b1++; } });
+      new Set(g.bans.map(ckey)).forEach(k => get(k, g.bans.find(b => ckey(b) === k)).ban++);
+    });
+    // Fearless draft: once picked in a series, a champion is unavailable for the rest of that series, so those games don't count for its prioscore.
+    C.forEach(c => {
+      const firstPicked = new Map();
+      games.forEach(g => { if (g.picks.has(c.k)) { const f = firstPicked.get(g.series); if (f == null || g.n < f) firstPicked.set(g.series, g.n); } });
+      const avail = games.filter(g => { const f = firstPicked.get(g.series); return f == null || g.n <= f; }).length;
+      c.avail = avail; c.prio = avail ? (c.pick + c.ban) / avail : 0;
+      c.b1r = c.dPicks ? c.b1 / c.dPicks : null; c.wr = c.pick ? c.w / c.pick : null;
+    });
+    return [...C.values()];
+  }
+  const CH_VAL = { name: c => c.name, pick: c => c.pick, ban: c => c.ban, prio: c => c.prio, b1: c => c.b1r, w: c => c.w, l: c => c.l, wr: c => c.wr };
+  function sortChamps(list) {
+    const k = champSort.key, f = CH_VAL[k] || CH_VAL.prio, dir = champSort.dir;
+    return list.slice().sort((p, q) => {
+      const a = f(p), b = f(q);
+      if (k === "name") return dir < 0 ? String(a).localeCompare(b) : String(b).localeCompare(a);
+      if (a == null || b == null) { if (a != null) return -1; if (b != null) return 1; }
+      else if (a !== b) return dir < 0 ? b - a : a - b;
+      return q.prio - p.prio || q.pick - p.pick || p.name.localeCompare(q.name);
+    });
+  }
+  let drawChampTable = () => {};
+  async function renderChampions() {
+    $("champTabs").innerHTML = [...Object.entries(PLAYING).map(([k, L]) => [k, L.name]), ["all", "Global"]].map(([k, name]) =>
+      `<button type="button" class="seg" aria-pressed="${k === champKey}" data-k="${k}">${esc(name)}</button>`).join("");
+    const key = champKey, label = key === "all" ? "All divisions" : LEAGUES[key].name;
+    let games = [];
+    drawChampTable = () => {
+      if (key !== champKey) return;
+      const list = sortChamps(champList), drafted = games.filter(g => g.drafted).length, pct = v => v == null ? "—" : `${Math.round(v * 100)}%`;
+      $("champMeta").textContent = games.length
+        ? `${label} · ${champList.length} champions · ${games.length} game${games.length === 1 ? "" : "s"} with stats${drafted ? `, ${drafted} with draft data` : ", no drafts recorded yet (bans and B1 need the drafter.lol link)"}. Prioscore = picks + bans ÷ games where the champion was available (in fearless, the games of a series after it was picked don't count). B1 = first pick of the draft ÷ picks.`
+        : `${label} · no games collected yet.`;
+      const th = (k, text, title, cls = "n") => {
+        const on = champSort.key === k;
+        return `<th class="${cls} sortable${on ? " on" : ""}" aria-sort="${on ? (champSort.dir < 0 ? "descending" : "ascending") : "none"}"><button type="button" data-csort="${k}" title="${esc(title)}">${esc(text)}<span class="sarr" aria-hidden="true">${on ? (champSort.dir < 0 ? "▼" : "▲") : ""}</span></button></th>`;
+      };
+      const dash = !drafted;
+      $("champBox").innerHTML = !list.length ? `<div class="st-empty">No champion data yet for ${esc(label)}.</div>` : `<div class="tablebox"><table class="data lb ch">
+        <thead><tr><th class="n">#</th>${th("name", "Champion", "Sort by name", "")}${th("pick", "Pick", "Times picked")}${th("ban", "Ban", "Times banned")}${th("prio", "Prioscore", "Picked or banned, % of games where it was available")}${th("b1", "B1", "First pick of the draft, % of its picks")}${th("w", "Wins", "Wins")}${th("l", "Losses", "Losses")}${th("wr", "Win rate", "Win rate")}</tr></thead>
+        <tbody>${list.map((c, i) => `<tr>
+          <td class="n rk">${i + 1}</td>
+          <td class="chn"><span class="ch-ic" data-i="${esc(c.name.slice(0, 2))}">${ddVer ? `<img src="https://ddragon.leagueoflegends.com/cdn/${ddVer}/img/champion/${encodeURIComponent(ddId(c.name))}.png" alt="" loading="lazy">` : ""}</span><span>${esc(c.name)}</span></td>
+          <td class="n">${c.pick}</td>
+          <td class="n">${dash ? "—" : c.ban}</td>
+          <td class="n kda">${pct(c.prio)}</td>
+          <td class="n">${pct(c.b1r)}</td>
+          <td class="n wl"><span class="w">${c.w}</span></td>
+          <td class="n wl"><span class="l">${c.l}</span></td>
+          <td class="n">${pct(c.wr)}</td></tr>`).join("")}</tbody></table></div>`;
+      $("champBox").querySelectorAll(".ch-ic img").forEach(img => img.addEventListener("error", () => img.remove(), { once: true }));
+    };
+    const build = (res, st, dr) => { games = champGames(key, res, st, dr); champList = champTable(games); drawChampTable(); };
+    if (results && statRows && drafts) build(results, statRows, drafts);
+    else { $("champMeta").textContent = "Loading champions…"; $("champBox").innerHTML = ""; }
+    const [res, st, dr] = await Promise.all([loadResults(), loadStats(), loadDrafts(), ddVersion()]);
+    build(res, st, dr);
+  }
+  $("champTabs").addEventListener("click", e => {
+    const b = e.target.closest("[data-k]"); if (!b) return;
+    champKey = b.dataset.k; store.set("wtl-champ", champKey); renderChampions();
+  });
+  $("champBox").addEventListener("click", e => {
+    const s = e.target.closest("[data-csort]"); if (!s) return;
+    const k = s.dataset.csort;
+    champSort = champSort.key === k ? { key: k, dir: -champSort.dir } : { key: k, dir: k === "name" ? -1 : -1 };
+    drawChampTable();
+    const again = $("champBox").querySelector(`[data-csort="${k}"]`); if (again) again.focus();
+  });
+
   // ---------- Standings (Swiss records from the Results sheet, seeded with the 5.6 tie breakers) ----------
   let standKey = store.get("wtl-stand");
   if (!PLAYING[standKey]) standKey = "na1";
@@ -2196,7 +2343,7 @@ button.rteam-head:hover .rteam-more { color: #fff; text-decoration-color: var(--
   });
 
   // ---------- Tabs ----------
-  const TABS = ["rules", "slope", "calculator", "roster", "standings", "schedule", "stats"];
+  const TABS = ["rules", "slope", "calculator", "roster", "standings", "schedule", "stats", "champions"];
   const tabBtns = [...document.querySelectorAll('.tabbar [role="tab"]')];
   function showTab(id, focus) {
     TABS.forEach(t => { $(t).hidden = t !== id; });
@@ -2206,6 +2353,7 @@ button.rteam-head:hover .rteam-more { color: #fff; text-decoration-color: var(--
     if (id === "standings") renderStandings();
     if (id === "schedule") renderSchedule();
     if (id === "stats") renderStats();
+    if (id === "champions") renderChampions();
   }
   // Resolve any in-page hash (tab id or an anchor inside a tab) to its tab, then scroll to the anchor
   function route(hash, smooth) {
