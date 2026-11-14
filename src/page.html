@@ -1949,7 +1949,8 @@ button.rteam-head:hover .rteam-more { color: #fff; text-decoration-color: var(--
   renderSchedule();
 
   // ---------- Stats (Stats tab of the Results sheet, filled weekly from the post-game screenshots) ----------
-  // Columns: Division | Stage | Game | Team | Result | Player (in game) | Roster name | Champion | Kills | Deaths | Assists | CS/min | Gold/min | Screenshot | Message | Notes
+  // Columns: Division | Stage | Game | Team | Result | Player (in game) | Roster name | Champion | Kills | Deaths | Assists | CS/min | Gold/min | Screenshot | Message | Notes | Team kills
+  // Team kills (optional) overrides the sum of the team's rows for kill participation, e.g. when an emergency sub's row was left out.
   let statsKey = store.get("wtl-stats");
   if (!PLAYING[statsKey]) statsKey = "na1";
   let statRows = null, statsAt = 0, statPlayers = [];
@@ -1966,7 +1967,7 @@ button.rteam-head:hover .rteam-more { color: #fff; text-decoration-color: var(--
   }
   const SORT_VAL = {
     n: p => p.n, wins: p => p.n ? p.wins : null, k: p => p.n ? p.K / p.n : null, d: p => p.n ? p.D / p.n : null,
-    a: p => p.n ? p.A / p.n : null, kda: p => p.n ? p.kda : null, cs: p => p.cs,
+    a: p => p.n ? p.A / p.n : null, kda: p => p.n ? p.kda : null, kp: p => p.kp, cs: p => p.cs,
   };
   function sortStats(list) {
     const f = SORT_VAL[statSort.key] || SORT_VAL.kda, dir = statSort.dir;
@@ -1989,7 +1990,7 @@ button.rteam-head:hover .rteam-more { color: #fff; text-decoration-color: var(--
           win: /^(w|win|victory)/i.test((c[4] || "").trim()), result: (c[4] || "").trim(),
           ign: (c[5] || "").trim(), name: (c[6] || "").trim() || (c[5] || "").trim(),
           champ: !champ || champ.includes("?") ? "Unknown" : champ,
-          k: numOr(c[8]), d: numOr(c[9]), a: numOr(c[10]), cs: numOr(c[11]), gold: numOr(c[12]), shot: (c[13] || "").trim(), msg: (c[14] || "").trim() };
+          k: numOr(c[8]), d: numOr(c[9]), a: numOr(c[10]), cs: numOr(c[11]), gold: numOr(c[12]), shot: (c[13] || "").trim(), msg: (c[14] || "").trim(), teamK: numOr(c[16]) };
       }).filter(x => x.div && x.name && x.k != null && x.d != null && x.a != null);
       statsAt = Date.now();
     } catch { statRows = statRows || []; }
@@ -2035,6 +2036,10 @@ button.rteam-head:hover .rteam-more { color: #fff; text-decoration-color: var(--
       players.push(pl);
       [norm(p.raw), norm(p.name)].forEach(k => { if (k && !byName.has(k)) byName.set(k, pl); });
     }));
+    const teamKills = new Map(), tk = x => `${x.msg || `${x.stage}|${x.game}`}|${norm(x.team)}`;
+    rows.forEach(x => { const k = tk(x); teamKills.set(k, (teamKills.get(k) || 0) + x.k); });
+    rows.forEach(x => { if (x.teamK != null) teamKills.set(tk(x), x.teamK); });
+    rows.forEach(x => { x.tKills = teamKills.get(tk(x)) || 0; });
     rows.forEach(x => {
       let pl = byName.get(norm(x.name)) || byName.get(norm(x.ign));
       if (!pl) { pl = { name: x.name, raw: x.name, team: x.team, role: "", order: 1e6, games: [] }; players.push(pl); byName.set(norm(x.name), pl); }
@@ -2042,7 +2047,8 @@ button.rteam-head:hover .rteam-more { color: #fff; text-decoration-color: var(--
     });
     return players.map(pl => {
       const g = pl.games, K = g.reduce((s, x) => s + x.k, 0), D = g.reduce((s, x) => s + x.d, 0), A = g.reduce((s, x) => s + x.a, 0);
-      return { ...pl, n: g.length, wins: g.filter(x => x.win).length, K, D, A, kda: g.length ? kdaOf(K, D, A) : 0,
+      const TK = g.reduce((s, x) => s + (x.tKills || 0), 0);
+      return { ...pl, n: g.length, wins: g.filter(x => x.win).length, K, D, A, kda: g.length ? kdaOf(K, D, A) : 0, kp: TK ? Math.min(1, (K + A) / TK) : null,
         cs: avg(g, x => x.cs), gold: avg(g, x => x.gold) };
     }).sort((p, q) => q.kda - p.kda || q.n - p.n || p.order - q.order || p.name.localeCompare(q.name));
   }
@@ -2065,11 +2071,11 @@ button.rteam-head:hover .rteam-more { color: #fff; text-decoration-color: var(--
         const on = statSort.key === k, arrow = on ? (statSort.dir < 0 ? "▼" : "▲") : "";
         return `<th class="n sortable${on ? " on" : ""}${cls ? " " + cls : ""}" aria-sort="${on ? (statSort.dir < 0 ? "descending" : "ascending") : "none"}"><button type="button" data-sort="${k}" title="Sort by ${esc(label)}">${esc(label)}<span class="sarr" aria-hidden="true">${arrow}</span></button></th>`;
       };
-      $("statsMeta").textContent = statPlayers.length ? `${LEAGUES[key].name}${statRole === "all" ? "" : ` · ${STAT_ROLES.find(([k]) => k === statRole)[1]}`} · ${statPlayers.length} players · ${rows.length ? "KDA = (kills + assists) ÷ deaths, all games combined. Click a stat at the top of the table to rank by it; click again to reverse." : "No games collected yet: everyone starts at 0."}` : LEAGUES[key].name;
+      $("statsMeta").textContent = statPlayers.length ? `${LEAGUES[key].name}${statRole === "all" ? "" : ` · ${STAT_ROLES.find(([k]) => k === statRole)[1]}`} · ${statPlayers.length} players · ${rows.length ? "KDA = (kills + assists) ÷ deaths; KP% = (kills + assists) ÷ team kills; all games combined. Click a stat at the top of the table to rank by it; click again to reverse." : "No games collected yet: everyone starts at 0."}` : LEAGUES[key].name;
       $("statsBox").innerHTML = !statPlayers.length
         ? `<div class="st-empty">${statAll.length ? `No ${esc(STAT_ROLES.find(([k]) => k === statRole)[1])} players in ${esc(LEAGUES[key].name)}.` : `No players yet for ${esc(LEAGUES[key].name)}. They appear here once teams are accepted.`}</div>`
         : `<div class="tablebox"><table class="data lb">
-            <thead><tr><th class="n">#</th><th>Player</th>${th("n", "Games")}${th("wins", "W–L", "hide-sm")}<th class="n hide-sm kda-h"><span class="kda-hl">Avg</span>${["k", "d", "a"].map(k => { const on = statSort.key === k; return `<button type="button" data-sort="${k}" class="${on ? "on" : ""}" aria-pressed="${on}" title="Sort by average ${{ k: "kills", d: "deaths", a: "assists" }[k]}">${k.toUpperCase()}${on ? `<span class="sarr" aria-hidden="true">${statSort.dir < 0 ? "▼" : "▲"}</span>` : ""}</button>`; }).join("<i>/</i>")}</th>${th("kda", "KDA")}${th("cs", "CS/min")}</tr></thead>
+            <thead><tr><th class="n">#</th><th>Player</th>${th("n", "Games")}${th("wins", "W–L", "hide-sm")}<th class="n hide-sm kda-h"><span class="kda-hl">Avg</span>${["k", "d", "a"].map(k => { const on = statSort.key === k; return `<button type="button" data-sort="${k}" class="${on ? "on" : ""}" aria-pressed="${on}" title="Sort by average ${{ k: "kills", d: "deaths", a: "assists" }[k]}">${k.toUpperCase()}${on ? `<span class="sarr" aria-hidden="true">${statSort.dir < 0 ? "▼" : "▲"}</span>` : ""}</button>`; }).join("<i>/</i>")}</th>${th("kda", "KDA")}${th("kp", "KP%")}${th("cs", "CS/min")}</tr></thead>
             <tbody>${statPlayers.map((p, i) => `<tr>
               <td class="n rk">${i + 1}</td>
               <td class="pl"><button type="button" class="pbtn" data-p="${i}" aria-haspopup="dialog">${esc(p.name)}</button>${p.team ? `<span class="team">${esc(p.team)}${p.role ? ` · ${esc(p.role)}` : ""}</span>` : ""}</td>
@@ -2077,6 +2083,7 @@ button.rteam-head:hover .rteam-more { color: #fff; text-decoration-color: var(--
               <td class="n wl hide-sm"><span class="w">${p.wins}</span>–<span class="l">${p.n - p.wins}</span></td>
               <td class="n kda-line hide-sm">${f1(per(p.K, p.n))}<i>/</i>${f1(per(p.D, p.n))}<i>/</i>${f1(per(p.A, p.n))}</td>
               <td class="n kda">${kdaTxt(p.K, p.D, p.A)}</td>
+              <td class="n">${p.kp == null ? (p.n ? "—" : "0%") : Math.round(p.kp * 100) + "%"}</td>
               <td class="n">${csTxt(p)}</td></tr>`).join("")}</tbody>
           </table></div>`;
     };
@@ -2102,7 +2109,7 @@ button.rteam-head:hover .rteam-more { color: #fff; text-decoration-color: var(--
       </header>
       <div class="tdlg-body">
         <div class="ptiles">
-          <div class="ptile"><div class="eyebrow">KDA</div><b>${kdaTxt(p.K, p.D, p.A)}</b><small>${p.K} / ${p.D} / ${p.A} total</small></div>
+          <div class="ptile"><div class="eyebrow">KDA</div><b>${kdaTxt(p.K, p.D, p.A)}</b><small>${p.K} / ${p.D} / ${p.A} total${p.kp != null ? ` · ${Math.round(p.kp * 100)}% kill participation` : ""}</small></div>
           <div class="ptile"><div class="eyebrow">Avg K / D / A</div><b class="sm">${f1(per(p.K, p.n))} / ${f1(per(p.D, p.n))} / ${f1(per(p.A, p.n))}</b><small>per game</small></div>
           <div class="ptile"><div class="eyebrow">CS / min</div><b>${csTxt(p)}</b><small>average${p.gold != null ? ` · ${Math.round(p.gold)} gold/min` : ""}</small></div>
           <div class="ptile"><div class="eyebrow">Games</div><b>${p.n}</b><small><span class="res-w">${p.wins}W</span> – <span class="res-l">${p.n - p.wins}L</span> · ${winPct}% wins</small></div>
