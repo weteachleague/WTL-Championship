@@ -1983,14 +1983,14 @@ button.rteam-head:hover .rteam-more { color: #fff; text-decoration-color: var(--
   // Player rating (0-100), per division, from the players who have played. Weights depend on the player's roster role
   // (a sub listed for several roles uses the first; not on a roster: support if under 3 CS/min, else mid):
   //   role     KDA   CS/min  KP    Team delta
-  //   Top      22.5  35      22.5  20      Jungle   35    22.5   35    7.5      Mid   30  30  30  10
-  //   ADC      22.5  35      22.5  20      Support  35    0      50    15
+  //   Top      22.5  35      27.5  15      Jungle   35    22.5   35    7.5      Mid   30  30  30  10
+  //   ADC      22.5  40      22.5  15      Support  40    0      50    10
   // KDA, CS/min and KP are percentiles; supports are compared with supports and everyone else together; CS not reported counts as 0.
   // Team delta: the player's score from KDA, CS/min and KP minus the average score of the teammates they played with (game by game),
   // as a percentile: doing average on a struggling team beats doing well on a team that all did great.
   // Few games pull the rating toward 50 (n / (n + 1)). The rank is the player's place by rating and follows them when sorting by a stat.
-  const RATE_W = { top: { kda: .225, cs: .35, kp: .225, team: .20 }, jungle: { kda: .35, cs: .225, kp: .35, team: .075 },
-    mid: { kda: .30, cs: .30, kp: .30, team: .10 }, adc: { kda: .225, cs: .35, kp: .225, team: .20 }, support: { kda: .35, cs: 0, kp: .50, team: .15 } };
+  const RATE_W = { top: { kda: .225, cs: .35, kp: .275, team: .15 }, jungle: { kda: .35, cs: .225, kp: .35, team: .075 },
+    mid: { kda: .30, cs: .30, kp: .30, team: .10 }, adc: { kda: .225, cs: .40, kp: .225, team: .15 }, support: { kda: .40, cs: 0, kp: .50, team: .10 } };
   const rateRole = p => { const m = String(p.role || "").toLowerCase().match(/\b(top|jungle|jgl|mid|adc|support|sup)\b/);
     const r = m ? ({ jgl: "jungle", sup: "support" }[m[1]] || m[1]) : null; return r || (p.cs != null && p.cs < 3 ? "support" : "mid"); };
   function rateStats(list) {
@@ -2135,7 +2135,7 @@ button.rteam-head:hover .rteam-more { color: #fff; text-decoration-color: var(--
         const on = statSort.key === k, arrow = on ? (statSort.dir < 0 ? "▼" : "▲") : "";
         return `<th class="n sortable${on ? " on" : ""}${cls ? " " + cls : ""}" aria-sort="${on ? (statSort.dir < 0 ? "descending" : "ascending") : "none"}"><button type="button" data-sort="${k}" title="Sort by ${esc(label)}">${esc(label)}<span class="sarr" aria-hidden="true">${arrow}</span></button></th>`;
       };
-      $("statsMeta").textContent = statPlayers.length ? `${LEAGUES[key].name}${statRole === "all" ? "" : ` · ${STAT_ROLES.find(([k]) => k === statRole)[1]}`} · ${statPlayers.length} players · ${rows.length ? "# = overall rank by player rating, from KDA, CS/min, KP and team delta (how the player did compared with their teammates), weighted by role: top and ADC 22.5/35/22.5/20, jungle 35/22.5/35/7.5, mid 30/30/30/10, support 35/0/50/15. Compared within the division, supports with supports; CS not reported counts as 0; few games pull the rating toward average. It follows the player when you sort by a stat; click # to sort by rank again. KDA = (kills + assists) ÷ deaths; KP% = (kills + assists) ÷ team kills." : "No games collected yet: everyone starts at 0."}` : LEAGUES[key].name;
+      $("statsMeta").textContent = statPlayers.length ? `${LEAGUES[key].name}${statRole === "all" ? "" : ` · ${STAT_ROLES.find(([k]) => k === statRole)[1]}`} · ${statPlayers.length} players · ${rows.length ? "# = overall rank by player rating, from KDA, CS/min, KP and team delta (how the player did compared with their teammates), weighted by role (KDA/CS/KP/team delta): top 22.5/35/27.5/15, jungle 35/22.5/35/7.5, mid 30/30/30/10, ADC 22.5/40/22.5/15, support 40/0/50/10. Compared within the division, supports with supports; CS not reported counts as 0; few games pull the rating toward average. It follows the player when you sort by a stat; click # to sort by rank again. KDA = (kills + assists) ÷ deaths; KP% = (kills + assists) ÷ team kills." : "No games collected yet: everyone starts at 0."}` : LEAGUES[key].name;
       $("statsBox").innerHTML = !statPlayers.length
         ? `<div class="st-empty">${statAll.length ? `No ${esc(STAT_ROLES.find(([k]) => k === statRole)[1])} players in ${esc(LEAGUES[key].name)}.` : `No players yet for ${esc(LEAGUES[key].name)}. They appear here once teams are accepted.`}</div>`
         : `<div class="tablebox"><table class="data lb">
