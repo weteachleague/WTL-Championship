@@ -224,6 +224,17 @@ SLOPE Evaluation
 3.2 Other Roster Stipulations
 [3.2.1] If a player is removed from a team for breaking the rules or for any other reason, the team has 1 week from the league’s announcement of the ruling to fill that spot on its roster. The new player must have an equal or lower point value.
 [3.2.2] A player can be a starter on only 1 roster at a time. They may also be a sub on another team, as long as that team is in a different division.
+3.3 Emergency Substitutes
+[3.3.1] An emergency substitute (Esub) is a player who is not on the team’s roster. A team may use an Esub only if the match cannot be played with the players on its roster.
+[3.3.2] Esubs follow the same rules as regular substitutes. An Esub receives a SLOPE evaluation and must be at or below the point evaluation of the starting player they replace (see [2.3.2]).
+[3.3.3] Esubs must be members of the WTL academies.
+[3.3.4] An Esub cannot be a player on another team’s roster.
+[3.3.5] A team may use at most 2 Esubs in the same match.
+[3.3.6] Each Esub must be submitted to the organizers for review and approved before they can play. No Esub request will be considered less than 2 hours before the start of the match.
+[3.3.7] Esubs must be included in the roster announcement (see [3.1.2]).
+[3.3.7.1] If the Esub is announced at least 24 hours before the match, the team loses two bans in the first ban phase of every game the Esub plays.
+[3.3.7.2] If the Esub is announced less than 24 hours before the match, the team loses three bans in the first ban phase of every game the Esub plays.
+[3.3.7.3] The Esub penalty replaces the penalty in [3.1.2.3]; they do not stack.
 4.0 Pauses, Disconnects, Remakes, Forfeits
 4.1 Pauses and Breaks
 [4.1.1] If a player disconnects, or if any serious issue occurs, the game can be paused for up to 10 minutes by each team per individual game.  If the pause surpasses 10 total minutes of pause time from a singular team, the game must unpause and be played out or the offending team must forfeit.
