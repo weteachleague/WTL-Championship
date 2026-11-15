@@ -1978,7 +1978,7 @@ button.rteam-head:hover .rteam-more { color: #fff; text-decoration-color: var(--
   }
   const SORT_VAL = {
     rank: p => p.rating, n: p => p.n, wins: p => p.n ? p.wins : null, k: p => p.n ? p.K / p.n : null, d: p => p.n ? p.D / p.n : null,
-    a: p => p.n ? p.A / p.n : null, kda: p => p.n ? p.kda : null, kp: p => p.kp, cs: p => p.cs,
+    a: p => p.n ? p.A / p.n : null, kda: p => p.n ? p.kda : null, kp: p => p.kp, cs: p => p.n ? (p.cs ?? 0) : null,
   };
   // Player rating (0-100), per division, from the players who have played. Weights depend on the player's roster role
   // (a sub listed for several roles uses the first; not on a roster: support if under 3 CS/min, else mid):
@@ -2085,7 +2085,7 @@ button.rteam-head:hover .rteam-more { color: #fff; text-decoration-color: var(--
   const avg = (list, f) => { const v = list.map(f).filter(x => x != null); return v.length ? v.reduce((s, x) => s + x, 0) / v.length : null; };
   const f1 = n => n == null || !Number.isFinite(n) ? "—" : n.toFixed(1);
   const per = (tot, n) => n ? tot / n : 0;
-  const csTxt = p => p.n ? f1(p.cs) : "0.0";
+  const csTxt = p => p.cs == null ? "0.0" : f1(p.cs); // CS not reported shows (and sorts) as 0
   function aggregate(rows, teams) {
     // Roster players first (accepted teams, starters then subs), then anyone in the stats who isn't on a roster
     const players = [], byName = new Map();
@@ -2191,12 +2191,12 @@ button.rteam-head:hover .rteam-more { color: #fff; text-decoration-color: var(--
         <h4 class="pdlg-h">Champions played</h4>
         <div class="tablebox"><table class="data ptbl">
           <thead><tr><th>Champion</th><th class="n">Games</th><th>Win rate</th><th class="n">KDA</th><th class="n">CS/min</th></tr></thead>
-          <tbody>${champRows.length ? "" : `<tr><td colspan="5" class="wl-sm">No games yet</td></tr>`}${champRows.map(c => `<tr><td>${esc(c.c)}</td><td class="n">${c.n}</td><td class="wrc"><span class="wr-bar" aria-hidden="true"><span style="width:${wr(c)}%"></span></span>${wr(c)}% <span class="wl-sm">(${c.w}–${c.n - c.w})</span></td><td class="n">${c.kda}</td><td class="n">${c.cs == null ? "—" : c.cs.toFixed(1)}</td></tr>`).join("")}</tbody>
+          <tbody>${champRows.length ? "" : `<tr><td colspan="5" class="wl-sm">No games yet</td></tr>`}${champRows.map(c => `<tr><td>${esc(c.c)}</td><td class="n">${c.n}</td><td class="wrc"><span class="wr-bar" aria-hidden="true"><span style="width:${wr(c)}%"></span></span>${wr(c)}% <span class="wl-sm">(${c.w}–${c.n - c.w})</span></td><td class="n">${c.kda}</td><td class="n">${c.cs == null ? "0.0" : c.cs.toFixed(1)}</td></tr>`).join("")}</tbody>
         </table></div>
         <h4 class="pdlg-h">Games</h4>
         <div class="tablebox"><table class="data ptbl">
           <thead><tr><th>Game</th><th>Champion</th><th>Result</th><th class="n">K / D / A</th><th class="n">CS/min</th></tr></thead>
-          <tbody>${p.games.length ? "" : `<tr><td colspan="5" class="wl-sm">No games yet</td></tr>`}${p.games.map(x => `<tr><td>${esc(STAGE_LABEL[x.stage] || x.stage)} · G${x.game}${x.shot ? ` · <a href="${esc(x.shot)}" target="_blank" rel="noopener">screenshot</a>` : ""}</td><td>${esc(x.champ)}</td><td class="${x.win ? "res-w" : "res-l"}">${x.win ? "Win" : "Loss"}</td><td class="n">${x.k} / ${x.d} / ${x.a}</td><td class="n">${x.cs == null ? "—" : x.cs.toFixed(1)}</td></tr>`).join("")}</tbody>
+          <tbody>${p.games.length ? "" : `<tr><td colspan="5" class="wl-sm">No games yet</td></tr>`}${p.games.map(x => `<tr><td>${esc(STAGE_LABEL[x.stage] || x.stage)} · G${x.game}${x.shot ? ` · <a href="${esc(x.shot)}" target="_blank" rel="noopener">screenshot</a>` : ""}</td><td>${esc(x.champ)}</td><td class="${x.win ? "res-w" : "res-l"}">${x.win ? "Win" : "Loss"}</td><td class="n">${x.k} / ${x.d} / ${x.a}</td><td class="n">${x.cs == null ? "0.0" : x.cs.toFixed(1)}</td></tr>`).join("")}</tbody>
         </table></div>
       </div>`;
   }
