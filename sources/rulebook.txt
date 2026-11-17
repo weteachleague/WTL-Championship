@@ -235,6 +235,7 @@ SLOPE Evaluation
 [3.3.7.1] If the Esub is announced at least 24 hours before the match, the team loses two bans in the first ban phase of every game the Esub plays.
 [3.3.7.2] If the Esub is announced less than 24 hours before the match, the team loses three bans in the first ban phase of every game the Esub plays.
 [3.3.7.3] The Esub penalty replaces the penalty in [3.1.2.3]; they do not stack.
+Please note that captains are encouraged to enforce these punishments to incentivise respect and sportsmanship, but not obligated to do so.
 4.0 Pauses, Disconnects, Remakes, Forfeits
 4.1 Pauses and Breaks
 [4.1.1] If a player disconnects, or if any serious issue occurs, the game can be paused for up to 10 minutes by each team per individual game.  If the pause surpasses 10 total minutes of pause time from a singular team, the game must unpause and be played out or the offending team must forfeit.
