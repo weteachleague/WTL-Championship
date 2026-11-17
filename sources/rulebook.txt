@@ -230,7 +230,7 @@ SLOPE Evaluation
 [3.3.3] Esubs must be members of the WTL academies.
 [3.3.4] An Esub cannot be a player on another team’s roster.
 [3.3.5] A team may use at most 2 Esubs in the same match.
-[3.3.6] Each Esub must be submitted to the organizers for review and approved before they can play. No Esub request will be considered less than 2 hours before the start of the match.
+[3.3.6] Each Esub must be submitted to the organizers for review and approved before they can play. No Esub request less than 2 hours before the start of the match may cost further penalties.
 [3.3.7] Esubs must be included in the roster announcement (see [3.1.2]).
 [3.3.7.1] If the Esub is announced at least 24 hours before the match, the team loses two bans in the first ban phase of every game the Esub plays.
 [3.3.7.2] If the Esub is announced less than 24 hours before the match, the team loses three bans in the first ban phase of every game the Esub plays.
