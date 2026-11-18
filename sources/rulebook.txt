@@ -224,7 +224,7 @@ SLOPE Evaluation
 3.2 Other Roster Stipulations
 [3.2.1] If a player is removed from a team for breaking the rules or for any other reason, the team has 1 week from the league’s announcement of the ruling to fill that spot on its roster. The new player must have an equal or lower point value.
 [3.2.2] A player can be a starter on only 1 roster at a time. They may also be a sub on another team, as long as that team is in a different division.
-[3.2.3] If a team wants to add a substitute to their roster, they are able to do so, but note that the change will only be made for the following week, meaning, it will only apply after the match of that week.
+[3.2.3] A team may add additional substitutes to their roster permanently, but note that they will be treated as an Esub for the first week they join. After the match of that week is played, they will become a on-roster sub.
 3.3 Emergency Substitutes
 [3.3.1] An emergency substitute (Esub) is a player who is not on the team’s roster. A team may use an Esub only if the match cannot be played with the players on its roster.
 [3.3.2] Esubs follow the same rules as regular substitutes. An Esub receives a SLOPE evaluation and must be at or below the point evaluation of the starting player they replace (see [2.3.2]).
