@@ -273,6 +273,8 @@ footer.foot .wrap { padding-block: 24px; display: flex; flex-wrap: wrap; gap: 8p
 .slot .tbd-mark { display: grid; place-items: center; border: 1px dashed var(--line); color: var(--muted); font: 600 16px/1 var(--font-display); }
 .slot .t { font: 600 17px/1.25 var(--font-display); letter-spacing: .02em; color: #fff; overflow-wrap: anywhere; }
 .slot.tbd .t { color: var(--muted); font-weight: 500; }
+.slot.pend .t { color: var(--soft); font-size: 15px; }
+.slot.pend .t small { display: block; margin-bottom: 2px; color: var(--magenta); font: 600 11px/1.2 var(--font-display); letter-spacing: .1em; text-transform: uppercase; }
 .slot .sc { margin-left: auto; padding-left: 10px; font: 700 26px/1 var(--font-display); color: var(--muted); font-variant-numeric: tabular-nums; }
 .slot.win .sc { color: var(--ok); }
 .slot.win .t::after { content: "Winner"; display: inline-block; margin-left: 8px; padding: 3px 6px; border-radius: 3px; background: var(--ok-soft); color: var(--ok); font: 600 10px/1 var(--font-display); letter-spacing: .1em; text-transform: uppercase; vertical-align: 3px; }
@@ -1807,8 +1809,9 @@ button.rteam-head:hover .rteam-more { color: #fff; text-decoration-color: var(--
   const stagesFor = key => [...(LAYOUTS[DIV_TEAMS[key]] || LAYOUTS[8]), PLAYOFFS];
   // Week 1 random draw, published 2026-11-08.
   const SCHEDULE = {
-    // na1 week 2 drawn 2026-11-13 (random within record groups)
-    na1: { w1: [["Air Force Gaming", "Int for Head Pats", "Pengu and the Intermediate Bots", "End of Review", "Wire Dolves", "Cowboy Kitties", "shadowz", "WTL Interviewees"]], w2: [["End of Review", "Cowboy Kitties", "WTL Interviewees", "Air Force Gaming"], ["Wire Dolves", "Pengu and the Intermediate Bots", "Int for Head Pats", "shadowz"]] },
+    // na1 week 2 drawn 2026-11-13 (random within record groups); week 3 drawn 2026-11-21 (random 1W-1L; WTL Interviewees vs Air Force Gaming decides two slots)
+    na1: { w1: [["Air Force Gaming", "Int for Head Pats", "Pengu and the Intermediate Bots", "End of Review", "Wire Dolves", "Cowboy Kitties", "shadowz", "WTL Interviewees"]], w2: [["End of Review", "Cowboy Kitties", "WTL Interviewees", "Air Force Gaming"], ["Wire Dolves", "Pengu and the Intermediate Bots", "Int for Head Pats", "shadowz"]],
+      w3: [["Cowboy Kitties", { winner: ["w2", "WTL Interviewees", "Air Force Gaming"] }], ["End of Review", { loser: ["w2", "WTL Interviewees", "Air Force Gaming"] }, "Wire Dolves", "Int for Head Pats"], ["Pengu and the Intermediate Bots", "shadowz"]] },
     // na2 week 2 drawn 2026-11-13 (random within record groups); week 3 drawn 2026-11-20 (1W-1L: 0W-1L winners vs 1W-0L losers)
     na2: { w1: [["Tuff Puffs", "Tinky Winky Fanclub", "WTL Students of the Game", "Loser's Queue", "NoTPs", "Hanhwa Life Support", "Project Jasper", "Couch Enthusiasts"]], w2: [["Project Jasper", "Loser's Queue", "NoTPs", "Tuff Puffs"], ["Hanhwa Life Support", "WTL Students of the Game", "Couch Enthusiasts", "Tinky Winky Fanclub"]], w3: [["Tuff Puffs", "Loser's Queue"], ["WTL Students of the Game", "Project Jasper", "Tinky Winky Fanclub", "NoTPs"], ["Hanhwa Life Support", "Couch Enthusiasts"]] },
     // NA D3 became 8 teams on 2026-11-08: Last Minute Legends took Whiskey Warriors' week 1 bye
@@ -1916,7 +1919,21 @@ button.rteam-head:hover .rteam-more { color: #fff; text-decoration-color: var(--
     const local = `Your time: ${f({ weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit", timeZoneName: "short" })}`;
     return `<div class="when${set ? " moved" : ""}" title="${esc(local)}"><time datetime="${when.toISOString()}">${esc(main)}</time>${set ? `<span class="mv" title="Rescheduled with /schedule">Moved</span>` : a && b ? `<span class="df">Default</span>` : ""}</div>`;
   }
+  // A slot can wait on a series still being played: {winner: ["w2", "Team A", "Team B"]} or {loser: [...]}.
+  // It shows "Winner of Team A vs Team B" until that series is decided, then the team's name.
+  function resolveSlot(v, list) {
+    if (!v || typeof v === "string") return v;
+    const kind = v.winner ? "winner" : "loser", [st, a, b] = v[kind];
+    const [sa, sb] = seriesScore(list, st, a, b), need = st === "final" ? 3 : 2;
+    if (sa >= need) return kind === "winner" ? a : b;
+    if (sb >= need) return kind === "winner" ? b : a;
+    return v;
+  }
   function schedSlot(name, score, state) {
+    if (name && typeof name === "object") {
+      const kind = name.winner ? "winner" : "loser", [st, a, b] = name[kind];
+      return `<div class="slot tbd pend"><span class="tbd-mark" aria-hidden="true">?</span><span class="t"><small>${kind === "winner" ? "Winner" : "Loser"} of ${esc(STAGE_LABEL[st] || st)}</small>${esc(a)} vs ${esc(b)}</span></div>`;
+    }
     if (!name) return `<div class="slot tbd"><span class="tbd-mark" aria-hidden="true">?</span><span class="t">TBD</span></div>`;
     const initials = name.split(/\s+/).filter(Boolean).slice(0, 2).map(w => w[0]).join("").toUpperCase();
     return `<div class="slot${state ? " " + state : ""}"><img class="rteam-logo" src="assets/logos/${slugify(name)}.png" alt="" data-initials="${esc(initials)}"><span class="t">${esc(name)}</span>${score != null ? `<span class="sc" aria-label="${score} games won">${score}</span>` : ""}</div>`;
@@ -1935,13 +1952,13 @@ button.rteam-head:hover .rteam-more { color: #fff; text-decoration-color: var(--
       if (key !== schedKey) return;
       box.innerHTML = stagesFor(key).map(st => {
         const body = st.brackets.map((b, bi) => {
-          const names = ((data[st.id] || [])[bi]) || [];
+          const names = (((data[st.id] || [])[bi]) || []).map(v => resolveSlot(v, list));
           const stage = st.id === "po" ? (bi === 0 ? "semi" : "final") : st.id;
           const need = stage === "final" ? 3 : 2;
           let rows = "";
           if (b.bye) rows = `<div class="mt bye">${schedSlot(names[0], null, names[0] ? "byed" : "")}</div>`;
           else for (let i = 0; i < b.slots; i += 2) {
-            const a = names[i], c = names[i + 1];
+            const a0 = names[i], c0 = names[i + 1], a = typeof a0 === "string" ? a0 : null, c = typeof c0 === "string" ? c0 : null;
             let sa = null, sc = null, stA = "", stC = "";
             if (a && c) {
               [sa, sc] = seriesScore(list, stage, a, c);
@@ -1950,7 +1967,7 @@ button.rteam-head:hover .rteam-more { color: #fff; text-decoration-color: var(--
               else if (sc >= need) { stC = "win"; stA = "lose"; }
             }
             const whenHtml = stage === "final" ? `<div class="when"><span>Preset time (rule 5.5.5)</span></div>` : matchTime(key, stage, a, c, tlist);
-            rows += `<div class="mt">${whenHtml}${schedSlot(a, sa, stA)}<div class="vs">vs</div>${schedSlot(c, sc, stC)}${matchDraft(list, stage, a, c)}${matchPenalties(key, stage, a, c, plist)}</div>`;
+            rows += `<div class="mt">${whenHtml}${schedSlot(a0, sa, stA)}<div class="vs">vs</div>${schedSlot(c0, sc, stC)}${matchDraft(list, stage, a, c)}${matchPenalties(key, stage, a, c, plist)}</div>`;
           }
           return `<div class="bkt"><h4>${esc(b.label)}</h4>${b.note ? `<p class="bnote">${esc(b.note)}</p>` : ""}${rows}</div>`;
         }).join("");
