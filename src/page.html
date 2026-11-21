@@ -338,6 +338,9 @@ footer.foot .wrap { padding-block: 24px; display: flex; flex-wrap: wrap; gap: 8p
 .lb td.pl { white-space: normal; min-width: 180px; }
 .lb .pbtn { font: 600 17px/1.25 var(--font-display); letter-spacing: .02em; color: #fff; background: none; border: 0; padding: 0; cursor: pointer; text-align: left; text-decoration: underline; text-decoration-color: var(--line); text-underline-offset: 4px; overflow-wrap: anywhere; }
 .lb .pbtn:hover { text-decoration-color: var(--magenta); }
+.cdlg-t { display: flex; align-items: center; gap: 14px; }
+.cdlg-ic { width: 56px; height: 56px; border-radius: 8px; border: 1px solid var(--line); }
+.lb.ch .chn .pbtn { font-size: 16px; }
 .lb .pbtn:focus-visible { outline: 2px solid var(--magenta); outline-offset: 2px; }
 .lb .team { display: block; font-size: 13.5px; color: var(--muted); }
 .lb td.kda { font: 700 18px/1 var(--font-display); color: #fff; }
@@ -1004,7 +1007,7 @@ button.rteam-head:hover .rteam-more { color: #fff; text-decoration-color: var(--
     <div class="band-head">
       <div class="eyebrow">Section G</div>
       <h2>Stats</h2>
-      <p>Player leaderboard for each division, ranked by KDA ((kills + assists) ÷ deaths over all games played). Stats are read from the post-game screenshots of reported games and updated weekly. Click a player for their averages and champions.</p>
+      <p>Player leaderboard for each division, ranked by player rating; KDA is the average of each game's (kills + assists) ÷ deaths. Stats are read from the post-game screenshots of reported games and updated weekly. Click a player for their averages and champions.</p>
     </div>
     <div class="seg-row" id="statsTabs" aria-label="Division"></div>
     <div class="seg-row roles" id="statsRoles" aria-label="Role"></div>
@@ -1018,11 +1021,12 @@ button.rteam-head:hover .rteam-more { color: #fff; text-decoration-color: var(--
     <div class="band-head">
       <div class="eyebrow">Section H</div>
       <h2>Champions</h2>
-      <p>Picks, bans, priority and results for every champion played, per division or across all divisions. Picks and results come from the post-game screenshots; bans and first picks come from the drafter.lol drafts. Click a stat at the top of the table to rank by it.</p>
+      <p>Picks, bans, priority and results for every champion played, per division or across all divisions. Picks and results come from the post-game screenshots; bans and first picks come from the drafter.lol drafts. Click a stat at the top of the table to rank by it, or a champion for its stats and the players who played it.</p>
     </div>
     <div class="seg-row" id="champTabs" aria-label="Division"></div>
     <p class="hint st-meta" id="champMeta" aria-live="polite"></p>
     <div id="champBox"></div>
+    <dialog id="champDlg" class="tdlg" aria-labelledby="cdlgTitle"></dialog>
   </div>
 </section>
 </main>
@@ -2317,7 +2321,7 @@ button.rteam-head:hover .rteam-more { color: #fff; text-decoration-color: var(--
       return q.prio - p.prio || q.pick - p.pick || p.name.localeCompare(q.name);
     });
   }
-  let drawChampTable = () => {};
+  let drawChampTable = () => {}, champShown = [], champCtx = null;
   async function renderChampions() {
     $("champTabs").innerHTML = [...Object.entries(PLAYING).map(([k, L]) => [k, L.name]), ["all", "Global"]].map(([k, name]) =>
       `<button type="button" class="seg" aria-pressed="${k === champKey}" data-k="${k}">${esc(name)}</button>`).join("");
@@ -2325,7 +2329,7 @@ button.rteam-head:hover .rteam-more { color: #fff; text-decoration-color: var(--
     let games = [];
     drawChampTable = () => {
       if (key !== champKey) return;
-      const list = sortChamps(champList), drafted = games.filter(g => g.drafted).length, pct = v => v == null ? "—" : `${Math.round(v * 100)}%`;
+      const list = champShown = sortChamps(champList), drafted = games.filter(g => g.drafted).length, pct = v => v == null ? "—" : `${Math.round(v * 100)}%`;
       $("champMeta").textContent = games.length
         ? `${label} · ${champList.length} champions · ${games.length} game${games.length === 1 ? "" : "s"}${drafted ? `, ${drafted === games.length ? "all" : drafted} with draft data` : ", no drafts recorded yet (bans and B1 need the drafter.lol link)"}. Prioscore = picks + bans ÷ games where the champion was available (in fearless, the games of a series after it was picked don't count). B1 = first pick of the draft ÷ picks.`
         : `${label} · no games collected yet.`;
@@ -2338,7 +2342,7 @@ button.rteam-head:hover .rteam-more { color: #fff; text-decoration-color: var(--
         <thead><tr><th class="n">#</th>${th("name", "Champion", "Sort by name", "")}${th("pick", "Pick", "Times picked")}${th("ban", "Ban", "Times banned")}${th("prio", "Prioscore", "Picked or banned, % of games where it was available")}${th("b1", "B1", "First pick of the draft, % of its picks")}${th("w", "Wins", "Wins")}${th("l", "Losses", "Losses")}${th("wr", "Win rate", "Win rate")}</tr></thead>
         <tbody>${list.map((c, i) => `<tr>
           <td class="n rk">${i + 1}</td>
-          <td class="chn"><span class="ch-ic" data-i="${esc(c.name.slice(0, 2))}">${ddVer ? `<img src="https://ddragon.leagueoflegends.com/cdn/${ddVer}/img/champion/${encodeURIComponent(ddId(c.name))}.png" alt="" loading="lazy">` : ""}</span><span>${esc(c.name)}</span></td>
+          <td class="chn"><span class="ch-ic" data-i="${esc(c.name.slice(0, 2))}">${ddVer ? `<img src="https://ddragon.leagueoflegends.com/cdn/${ddVer}/img/champion/${encodeURIComponent(ddId(c.name))}.png" alt="" loading="lazy">` : ""}</span><button type="button" class="pbtn" data-c="${i}" aria-haspopup="dialog">${esc(c.name)}</button></td>
           <td class="n">${c.pick}</td>
           <td class="n">${dash ? "—" : c.ban}</td>
           <td class="n kda">${pct(c.prio)}</td>
@@ -2348,7 +2352,7 @@ button.rteam-head:hover .rteam-more { color: #fff; text-decoration-color: var(--
           <td class="n">${pct(c.wr)}</td></tr>`).join("")}</tbody></table></div>`;
       $("champBox").querySelectorAll(".ch-ic img").forEach(img => img.addEventListener("error", () => img.remove(), { once: true }));
     };
-    const build = (res, st, dr) => { games = champGames(key, res, st, dr); champList = champTable(games); drawChampTable(); };
+    const build = (res, st, dr) => { games = champGames(key, res, st, dr); champList = champTable(games); champCtx = { key, label, res, st, drafted: games.some(g => g.drafted) }; drawChampTable(); };
     if (results && statRows && drafts) build(results, statRows, drafts);
     else { $("champMeta").textContent = "Loading champions…"; $("champBox").innerHTML = ""; }
     const [res, st, dr] = await Promise.all([loadResults(), loadStats(), loadDrafts(), ddVersion()]);
@@ -2358,7 +2362,60 @@ button.rteam-head:hover .rteam-more { color: #fff; text-decoration-color: var(--
     const b = e.target.closest("[data-k]"); if (!b) return;
     champKey = b.dataset.k; store.set("wtl-champ", champKey); renderChampions();
   });
+  function champHtml(c) {
+    const { key, label, res, st, drafted } = champCtx;
+    const inScope = d => key === "all" ? !!PLAYING[d] : d === key;
+    const scoped = st.filter(x => inScope(x.div));
+    const tkOf = x => `${x.msg || `${x.div}|${x.stage}|${x.game}`}|${norm(x.team)}`, teamK = new Map();
+    scoped.forEach(x => teamK.set(tkOf(x), (teamK.get(tkOf(x)) || 0) + x.k));
+    scoped.forEach(x => { if (x.teamK != null) teamK.set(tkOf(x), x.teamK); });
+    const rows = scoped.filter(x => ckey(x.champ) === c.k);
+    const byMsg = new Map(res.map(r => [r.link, r]));
+    const n = rows.length, K = rows.reduce((s, x) => s + x.k, 0), D = rows.reduce((s, x) => s + x.d, 0), A = rows.reduce((s, x) => s + x.a, 0);
+    const kda = n ? rows.reduce((s, x) => s + kdaOf(x.k, x.d, x.a), 0) / n : null;
+    const TK = rows.reduce((s, x) => s + (teamK.get(tkOf(x)) || 0), 0), kp = TK ? Math.min(1, (K + A) / TK) : null;
+    const cs = avg(rows, x => x.cs), gold = avg(rows, x => x.gold), pct = v => v == null ? "—" : `${Math.round(v * 100)}%`;
+    const P = new Map();
+    rows.forEach(x => { const k = norm(x.name) + "|" + norm(x.team); if (!P.has(k)) P.set(k, { name: x.ign || x.name, team: x.team, div: x.div, g: [] }); P.get(k).g.push(x); });
+    const players = [...P.values()].map(p => ({ ...p, n: p.g.length, w: p.g.filter(x => x.win).length, kda: p.g.reduce((s, x) => s + kdaOf(x.k, x.d, x.a), 0) / p.g.length, cs: avg(p.g, x => x.cs) }))
+      .sort((a, b) => b.n - a.n || b.w - a.w || b.kda - a.kda || a.name.localeCompare(b.name));
+    const wrP = p => Math.round((p.w / p.n) * 100), divTag = d => key === "all" ? `${esc(LEAGUES[d] ? LEAGUES[d].name : d)} · ` : "";
+    const opp = x => { const r = byMsg.get(x.msg); if (!r) return ""; return norm(r.winner) === norm(x.team) ? r.loser : r.winner; };
+    const icon = ddVer ? `<img src="https://ddragon.leagueoflegends.com/cdn/${ddVer}/img/champion/${encodeURIComponent(ddId(c.name))}.png" alt="" class="cdlg-ic">` : "";
+    return `
+      <header class="tdlg-head">
+        <div class="cdlg-t">${icon}<div><div class="eyebrow">${esc(label)} · Champion</div><h3 id="cdlgTitle">${esc(c.name)}</h3></div></div>
+        <button type="button" class="tdlg-x" data-close aria-label="Close">×</button>
+      </header>
+      <div class="tdlg-body">
+        <div class="ptiles">
+          <div class="ptile"><div class="eyebrow">Prioscore</div><b>${pct(c.prio)}</b><small>${c.pick} pick${c.pick === 1 ? "" : "s"}${drafted ? ` · ${c.ban} ban${c.ban === 1 ? "" : "s"}` : ""} · ${c.avail} game${c.avail === 1 ? "" : "s"} available</small></div>
+          <div class="ptile"><div class="eyebrow">Win rate</div><b>${pct(c.wr)}</b><small><span class="res-w">${c.w}W</span> – <span class="res-l">${c.l}L</span>${c.b1r != null ? ` · B1 ${pct(c.b1r)}` : ""}</small></div>
+          <div class="ptile"><div class="eyebrow">KDA</div><b>${kda == null ? "—" : kda.toFixed(2)}</b><small>${n ? `${K} / ${D} / ${A} total${kp != null ? ` · ${Math.round(kp * 100)}% kill participation` : ""}` : "no player stats yet"}</small></div>
+          <div class="ptile"><div class="eyebrow">Avg K / D / A</div><b class="sm">${n ? `${f1(K / n)} / ${f1(D / n)} / ${f1(A / n)}` : "—"}</b><small>per game</small></div>
+          <div class="ptile"><div class="eyebrow">CS / min</div><b>${n ? (cs == null ? "0.0" : f1(cs)) : "—"}</b><small>average${gold != null ? ` · ${Math.round(gold)} gold/min` : ""}</small></div>
+        </div>
+        ${n < c.pick ? `<p class="hint pdlg-note">${c.pick - n} pick${c.pick - n === 1 ? " is" : "s are"} known only from the draft (no scoreboard stats), so ${c.pick - n === 1 ? "it counts" : "they count"} in picks and wins but not in KDA or CS.</p>` : ""}
+        <h4 class="pdlg-h">Played by</h4>
+        <div class="tablebox"><table class="data ptbl">
+          <thead><tr><th>Player</th><th class="n">Games</th><th>Win rate</th><th class="n">KDA</th><th class="n">CS/min</th></tr></thead>
+          <tbody>${players.length ? "" : `<tr><td colspan="5" class="wl-sm">No player stats yet</td></tr>`}${players.map(p => `<tr><td>${esc(p.name)}<span class="wl-sm"> · ${divTag(p.div)}${esc(p.team)}</span></td><td class="n">${p.n}</td><td class="wrc"><span class="wr-bar" aria-hidden="true"><span style="width:${wrP(p)}%"></span></span>${wrP(p)}% <span class="wl-sm">(${p.w}–${p.n - p.w})</span></td><td class="n">${p.kda.toFixed(2)}</td><td class="n">${p.cs == null ? "0.0" : p.cs.toFixed(1)}</td></tr>`).join("")}</tbody>
+        </table></div>
+        <h4 class="pdlg-h">Games</h4>
+        <div class="tablebox"><table class="data ptbl">
+          <thead><tr><th>Game</th><th>Player</th><th>Result</th><th class="n">K / D / A</th><th class="n">CS/min</th></tr></thead>
+          <tbody>${n ? "" : `<tr><td colspan="5" class="wl-sm">No player stats yet</td></tr>`}${rows.map(x => { const o = opp(x); return `<tr><td>${divTag(x.div)}${esc(STAGE_LABEL[x.stage] || x.stage)} · G${x.game}${o ? `<span class="wl-sm"> · vs ${esc(o)}</span>` : ""}${x.shot ? ` · <a href="${esc(x.shot)}" target="_blank" rel="noopener">screenshot</a>` : ""}</td><td>${esc(x.ign || x.name)}<span class="wl-sm"> · ${esc(x.team)}</span></td><td class="${x.win ? "res-w" : "res-l"}">${x.win ? "Win" : "Loss"}</td><td class="n">${x.k} / ${x.d} / ${x.a}</td><td class="n">${x.cs == null ? "0.0" : x.cs.toFixed(1)}</td></tr>`; }).join("")}</tbody>
+        </table></div>
+      </div>`;
+  }
+  const cdlg = $("champDlg");
+  let cdlgFrom = null;
+  const closeChamp = () => { if (!cdlg.open) return; cdlg.close(); if (cdlgFrom) cdlgFrom.focus(); };
+  cdlg.addEventListener("click", e => { if (e.target === cdlg || e.target.closest("[data-close]")) closeChamp(); });
+  cdlg.addEventListener("cancel", e => { e.preventDefault(); closeChamp(); });
   $("champBox").addEventListener("click", e => {
+    const cb = e.target.closest("[data-c]");
+    if (cb && champCtx) { const c = champShown[+cb.dataset.c]; if (c) { cdlgFrom = cb; cdlg.innerHTML = champHtml(c); cdlg.showModal(); } return; }
     const s = e.target.closest("[data-csort]"); if (!s) return;
     const k = s.dataset.csort;
     champSort = champSort.key === k ? { key: k, dir: -champSort.dir } : { key: k, dir: k === "name" ? -1 : -1 };
