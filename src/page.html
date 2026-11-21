@@ -2090,7 +2090,7 @@ button.rteam-head:hover .rteam-more { color: #fff; text-decoration-color: var(--
     } catch { return []; }
   }
   const kdaOf = (k, d, a) => (k + a) / Math.max(1, d);
-  const kdaTxt = (k, d, a) => d === 0 && k + a > 0 ? "Perfect" : kdaOf(k, d, a).toFixed(2);
+  const kdaTxt = (k, d, a) => kdaOf(k, d, a).toFixed(2);
   const avg = (list, f) => { const v = list.map(f).filter(x => x != null); return v.length ? v.reduce((s, x) => s + x, 0) / v.length : null; };
   const f1 = n => n == null || !Number.isFinite(n) ? "—" : n.toFixed(1);
   const per = (tot, n) => n ? tot / n : 0;
