@@ -2121,7 +2121,7 @@ button.rteam-head:hover .rteam-more { color: #fff; text-decoration-color: var(--
     return players.map(pl => {
       const g = pl.games, K = g.reduce((s, x) => s + x.k, 0), D = g.reduce((s, x) => s + x.d, 0), A = g.reduce((s, x) => s + x.a, 0);
       const TK = g.reduce((s, x) => s + (x.tKills || 0), 0);
-      return { ...pl, n: g.length, wins: g.filter(x => x.win).length, K, D, A, kda: g.length ? kdaOf(K, D, A) : 0, kp: TK ? Math.min(1, (K + A) / TK) : null,
+      return { ...pl, n: g.length, wins: g.filter(x => x.win).length, K, D, A, kda: g.length ? g.reduce((s, x) => s + kdaOf(x.k, x.d, x.a), 0) / g.length : 0, kp: TK ? Math.min(1, (K + A) / TK) : null,
         cs: avg(g, x => x.cs), gold: avg(g, x => x.gold) };
     }).sort((p, q) => q.kda - p.kda || q.n - p.n || p.order - q.order || p.name.localeCompare(q.name));
   }
@@ -2144,7 +2144,7 @@ button.rteam-head:hover .rteam-more { color: #fff; text-decoration-color: var(--
         const on = statSort.key === k, arrow = on ? (statSort.dir < 0 ? "▼" : "▲") : "";
         return `<th class="n sortable${on ? " on" : ""}${cls ? " " + cls : ""}" aria-sort="${on ? (statSort.dir < 0 ? "descending" : "ascending") : "none"}"><button type="button" data-sort="${k}" title="Sort by ${esc(label)}">${esc(label)}<span class="sarr" aria-hidden="true">${arrow}</span></button></th>`;
       };
-      $("statsMeta").textContent = statPlayers.length ? `${LEAGUES[key].name}${statRole === "all" ? "" : ` · ${STAT_ROLES.find(([k]) => k === statRole)[1]}`} · ${statPlayers.length} players · ${rows.length ? "# = overall rank by player rating, from KDA, CS/min, KP and team delta (how the player did compared with their teammates), weighted by role (KDA/CS/KP/team delta): top 22.5/35/27.5/15, jungle 35/22.5/35/7.5, mid 30/30/30/10, ADC 22.5/40/22.5/15, support 40/0/50/10. Compared within the division, supports with supports; CS not reported counts as 0; few games pull the rating toward average. It follows the player when you sort by a stat; click # to sort by rank again. KDA = (kills + assists) ÷ deaths; KP% = (kills + assists) ÷ team kills." : "No games collected yet: everyone starts at 0."}` : LEAGUES[key].name;
+      $("statsMeta").textContent = statPlayers.length ? `${LEAGUES[key].name}${statRole === "all" ? "" : ` · ${STAT_ROLES.find(([k]) => k === statRole)[1]}`} · ${statPlayers.length} players · ${rows.length ? "# = overall rank by player rating, from KDA, CS/min, KP and team delta (how the player did compared with their teammates), weighted by role (KDA/CS/KP/team delta): top 22.5/35/27.5/15, jungle 35/22.5/35/7.5, mid 30/30/30/10, ADC 22.5/40/22.5/15, support 40/0/50/10. Compared within the division, supports with supports; CS not reported counts as 0; few games pull the rating toward average. It follows the player when you sort by a stat; click # to sort by rank again. KDA = average of each game's (kills + assists) ÷ deaths (kills + assists when 0 deaths); KP% = (kills + assists) ÷ team kills." : "No games collected yet: everyone starts at 0."}` : LEAGUES[key].name;
       $("statsBox").innerHTML = !statPlayers.length
         ? `<div class="st-empty">${statAll.length ? `No ${esc(STAT_ROLES.find(([k]) => k === statRole)[1])} players in ${esc(LEAGUES[key].name)}.` : `No players yet for ${esc(LEAGUES[key].name)}. They appear here once teams are accepted.`}</div>`
         : `<div class="tablebox"><table class="data lb">
@@ -2155,7 +2155,7 @@ button.rteam-head:hover .rteam-more { color: #fff; text-decoration-color: var(--
               <td class="n">${p.n}</td>
               <td class="n wl hide-sm"><span class="w">${p.wins}</span>–<span class="l">${p.n - p.wins}</span></td>
               <td class="n kda-line hide-sm">${f1(per(p.K, p.n))}<i>/</i>${f1(per(p.D, p.n))}<i>/</i>${f1(per(p.A, p.n))}</td>
-              <td class="n kda">${kdaTxt(p.K, p.D, p.A)}</td>
+              <td class="n kda">${p.kda.toFixed(2)}</td>
               <td class="n">${p.kp == null ? (p.n ? "—" : "0%") : Math.round(p.kp * 100) + "%"}</td>
               <td class="n">${csTxt(p)}</td></tr>`).join("")}</tbody>
           </table></div>`;
@@ -2171,7 +2171,7 @@ button.rteam-head:hover .rteam-more { color: #fff; text-decoration-color: var(--
     p.games.forEach(x => { if (!champs.has(x.champ)) champs.set(x.champ, []); champs.get(x.champ).push(x); });
     const champRows = [...champs].map(([c, g]) => {
       const w = g.filter(x => x.win).length, K = g.reduce((s, x) => s + x.k, 0), D = g.reduce((s, x) => s + x.d, 0), A = g.reduce((s, x) => s + x.a, 0);
-      return { c, n: g.length, w, kda: kdaTxt(K, D, A), cs: avg(g, x => x.cs) };
+      return { c, n: g.length, w, kda: (g.reduce((s, x) => s + kdaOf(x.k, x.d, x.a), 0) / g.length).toFixed(2), cs: avg(g, x => x.cs) };
     }).sort((a, b) => b.n - a.n || b.w - a.w || a.c.localeCompare(b.c));
     const wr = n => n.n ? Math.round((n.w / n.n) * 100) : 0;
     const winPct = p.n ? Math.round((p.wins / p.n) * 100) : 0;
@@ -2182,7 +2182,7 @@ button.rteam-head:hover .rteam-more { color: #fff; text-decoration-color: var(--
       </header>
       <div class="tdlg-body">
         <div class="ptiles">
-          ${p.rating != null ? `<div class="ptile"><div class="eyebrow">Player rating</div><b>${Math.round(p.rating)}</b><small>rank ${p.rank} in ${esc(LEAGUES[statsKey].name)}</small></div>` : ""}<div class="ptile"><div class="eyebrow">KDA</div><b>${kdaTxt(p.K, p.D, p.A)}</b><small>${p.K} / ${p.D} / ${p.A} total${p.kp != null ? ` · ${Math.round(p.kp * 100)}% kill participation` : ""}</small></div>
+          ${p.rating != null ? `<div class="ptile"><div class="eyebrow">Player rating</div><b>${Math.round(p.rating)}</b><small>rank ${p.rank} in ${esc(LEAGUES[statsKey].name)}</small></div>` : ""}<div class="ptile"><div class="eyebrow">KDA</div><b>${p.kda.toFixed(2)}</b><small>${p.K} / ${p.D} / ${p.A} total${p.kp != null ? ` · ${Math.round(p.kp * 100)}% kill participation` : ""}</small></div>
           <div class="ptile"><div class="eyebrow">Avg K / D / A</div><b class="sm">${f1(per(p.K, p.n))} / ${f1(per(p.D, p.n))} / ${f1(per(p.A, p.n))}</b><small>per game</small></div>
           <div class="ptile"><div class="eyebrow">CS / min</div><b>${csTxt(p)}</b><small>average${p.gold != null ? ` · ${Math.round(p.gold)} gold/min` : ""}</small></div>
           <div class="ptile"><div class="eyebrow">Games</div><b>${p.n}</b><small><span class="res-w">${p.wins}W</span> – <span class="res-l">${p.n - p.wins}L</span> · ${winPct}% wins</small></div>
