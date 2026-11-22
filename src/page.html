@@ -1818,7 +1818,9 @@ button.rteam-head:hover .rteam-more { color: #fff; text-decoration-color: var(--
     // na3 week 3 drawn 2026-11-21 (random 1W-1L); the week 1 Tuff Puffs Rising vs Team TBD result decides which of them is 1W-1L and which 0W-2L
     na3: { w1: [["Tuff Puffs Rising", "Team TBD", "Let It Ride", "Molotov1", "The Beginning of Immortality", "The Flying Embers", "Whiskey Warriors", "Last Minute Legends"]], w2: [["Last Minute Legends", "Tuff Puffs Rising", "Molotov1", "The Flying Embers"], ["Team TBD", "The Beginning of Immortality", "Let It Ride", "Whiskey Warriors"]], w3: [["Last Minute Legends", "The Flying Embers"], [{ winner: ["w1", "Tuff Puffs Rising", "Team TBD"] }, "Whiskey Warriors", "Molotov1", "The Beginning of Immortality"], [{ loser: ["w1", "Tuff Puffs Rising", "Team TBD"] }, "Let It Ride"]] },
     // eu1 week 2 drawn 2026-11-16 (random within record groups, cross match without rematch)
-    eu1: { w1: [["PeyzPal", "Grey Screen Scholars", "Winners Queue v2", "Rooks", "Frozen Syndicate", "Gankruptcy"]], w2: [["Frozen Syndicate", "Rooks"], ["Grey Screen Scholars", "Winners Queue v2"], ["PeyzPal", "Gankruptcy"]] },
+    // eu1 week 3 drawn 2026-11-22 by record (2W-0L, 1W-1L, 0W-2L: two teams each, no cross match, no rematch)
+    eu1: { w1: [["PeyzPal", "Grey Screen Scholars", "Winners Queue v2", "Rooks", "Frozen Syndicate", "Gankruptcy"]], w2: [["Frozen Syndicate", "Rooks"], ["Grey Screen Scholars", "Winners Queue v2"], ["PeyzPal", "Gankruptcy"]],
+      w3: [["Rooks", "Grey Screen Scholars", "Frozen Syndicate", "PeyzPal", "Winners Queue v2", "Gankruptcy"]] },
   };
   let schedKey = store.get("wtl-sched");
   if (!PLAYING[schedKey]) schedKey = "na1";
