@@ -2013,8 +2013,8 @@ button.rteam-head:hover .rteam-more { color: #fff; text-decoration-color: var(--
   let statRole = store.get("wtl-stats-role");
   if (!STAT_ROLES.some(([k]) => k === statRole)) statRole = "top";
   const roleOf = p => String(p.role || "").toLowerCase().replace(/\bjgl\b/g, "jungle").replace(/\bsup\b/g, "support");
-  // A player shows under each role on their roster line (subs too); a player not on a roster goes by rateRole.
-  const roleMatch = p => roleOf(p) ? new RegExp(`\\b${statRole}\\b`).test(roleOf(p)) : rateRole(p) === statRole;
+  // A player shows under each role on their roster line (subs too); players no longer on a roster are left out.
+  const roleMatch = p => !!roleOf(p) && new RegExp(`\\b${statRole}\\b`).test(roleOf(p));
   function renderStatRoles() {
     $("statsRoles").innerHTML = STAT_ROLES.map(([k, label]) => `<button type="button" class="seg" aria-pressed="${k === statRole}" data-role="${k}">${label}</button>`).join("");
   }
@@ -2033,9 +2033,6 @@ button.rteam-head:hover .rteam-more { color: #fff; text-decoration-color: var(--
   // and follows them when sorting by a stat.
   const RATE_W = { top: { kda: .425, cs: .425, kp: .15 }, jungle: { kda: .40, cs: .20, kp: .40 },
     mid: { kda: .34, cs: .33, kp: .33 }, adc: { kda: .425, cs: .425, kp: .15 }, support: { kda: .60, cs: 0, kp: .40 } };
-  // Role used for a player with no roster role: support if under 3 CS/min, else mid
-  const rateRole = p => { const m = String(p.role || "").toLowerCase().match(/\b(top|jungle|jgl|mid|adc|support|sup)\b/);
-    const r = m ? ({ jgl: "jungle", sup: "support" }[m[1]] || m[1]) : null; return r || (p.cs != null && p.cs < 3 ? "support" : "mid"); };
   function rateStats(list, role) {
     const pl = list.filter(p => p.n > 0), W = RATE_W[role];
     const pct = (vals, v) => { if (vals.length < 2) return 0.5; let lo = 0, eq = 0; vals.forEach(x => { if (x < v) lo++; else if (x === v) eq++; }); return (lo + (eq - 1) / 2) / (vals.length - 1); };
